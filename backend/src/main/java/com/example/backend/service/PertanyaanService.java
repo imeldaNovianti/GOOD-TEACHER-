@@ -3,38 +3,50 @@ package com.example.backend.service;
 import com.example.backend.model.Pertanyaan;
 import com.example.backend.repository.PertanyaanRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
-@Transactional
 public class PertanyaanService {
-    private final PertanyaanRepository repo;
 
-    public PertanyaanService(PertanyaanRepository repo) {
-        this.repo = repo;
+    private final PertanyaanRepository pertanyaanRepository;
+
+    public PertanyaanService(PertanyaanRepository pertanyaanRepository) {
+        this.pertanyaanRepository = pertanyaanRepository;
     }
 
-    public List<Pertanyaan> listAll() {
-        return repo.findAll();
+    public List<Pertanyaan> getAll() {
+        return pertanyaanRepository.findAll();
     }
 
-    public Pertanyaan save(Pertanyaan p) {
-        return repo.save(p);
+    public Optional<Pertanyaan> getById(Long id) {
+        return pertanyaanRepository.findById(id);
     }
 
-    public Pertanyaan get(Long id) {
-        return repo.findById(id).orElseThrow();
+    public Pertanyaan create(Pertanyaan pertanyaan) {
+        return pertanyaanRepository.save(pertanyaan);
     }
 
-    public Pertanyaan update(Long id, Pertanyaan p) {
-        Pertanyaan existing = get(id);
-        existing.setTeks(p.getTeks());
-        return repo.save(existing);
+    public Pertanyaan update(Long id, Pertanyaan pertanyaanDetails) {
+        return pertanyaanRepository.findById(id)
+                .map(pertanyaan -> {
+                    pertanyaan.setTeks(pertanyaanDetails.getTeks());
+                    pertanyaan.setTipeJawaban(pertanyaanDetails.getTipeJawaban());
+                    return pertanyaanRepository.save(pertanyaan);
+                })
+                .orElseThrow(() -> new RuntimeException("Pertanyaan not found with id " + id));
     }
 
     public void delete(Long id) {
-        repo.deleteById(id);
+        pertanyaanRepository.deleteById(id);
+    }
+
+    public List<Pertanyaan> getByTipeJawaban(String tipeJawaban) {
+        return pertanyaanRepository.findByTipeJawaban(tipeJawaban);
+    }
+
+    public List<Pertanyaan> searchByTeks(String keyword) {
+        return pertanyaanRepository.findByTeksContainingIgnoreCase(keyword);
     }
 }

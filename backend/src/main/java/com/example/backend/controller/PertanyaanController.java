@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.model.Pertanyaan;
 import com.example.backend.service.PertanyaanService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,34 +11,58 @@ import java.util.List;
 @RequestMapping("/api/pertanyaan")
 public class PertanyaanController {
 
-    private final PertanyaanService service;
+    private final PertanyaanService pertanyaanService;
 
-    public PertanyaanController(PertanyaanService service) {
-        this.service = service;
+    public PertanyaanController(PertanyaanService pertanyaanService) {
+        this.pertanyaanService = pertanyaanService;
     }
 
+    // GET all
     @GetMapping
-    public List<Pertanyaan> getAllPertanyaan() {
-        return service.listAll();
+    public List<Pertanyaan> getAll() {
+        return pertanyaanService.getAll();
     }
 
+    // GET by ID
     @GetMapping("/{id}")
-    public Pertanyaan getPertanyaan(@PathVariable Long id) {
-        return service.get(id);
+    public ResponseEntity<Pertanyaan> getById(@PathVariable Long id) {
+        return pertanyaanService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
+    // CREATE
     @PostMapping
-    public Pertanyaan createPertanyaan(@RequestBody Pertanyaan p) {
-        return service.save(p);
+    public Pertanyaan create(@RequestBody Pertanyaan pertanyaan) {
+        return pertanyaanService.create(pertanyaan);
     }
 
+    // UPDATE
     @PutMapping("/{id}")
-    public Pertanyaan updatePertanyaan(@PathVariable Long id, @RequestBody Pertanyaan p) {
-        return service.update(id, p);
+    public ResponseEntity<Pertanyaan> update(@PathVariable Long id, @RequestBody Pertanyaan pertanyaanDetails) {
+        try {
+            return ResponseEntity.ok(pertanyaanService.update(id, pertanyaanDetails));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
+    // DELETE
     @DeleteMapping("/{id}")
-    public void deletePertanyaan(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        pertanyaanService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // GET by tipeJawaban (SKALA / TEKS)
+    @GetMapping("/tipe/{tipeJawaban}")
+    public List<Pertanyaan> getByTipeJawaban(@PathVariable String tipeJawaban) {
+        return pertanyaanService.getByTipeJawaban(tipeJawaban);
+    }
+
+    // SEARCH by teks pertanyaan
+    @GetMapping("/search")
+    public List<Pertanyaan> searchByTeks(@RequestParam String keyword) {
+        return pertanyaanService.searchByTeks(keyword);
     }
 }
