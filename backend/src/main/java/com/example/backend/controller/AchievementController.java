@@ -9,43 +9,70 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/achievements")
+@CrossOrigin(origins = "http://localhost:5173") // hanya frontend
 public class AchievementController {
 
-    private final AchievementService achievementService;
+    private final AchievementService service;
 
-    public AchievementController(AchievementService achievementService) {
-        this.achievementService = achievementService;
+    public AchievementController(AchievementService service) {
+        this.service = service;
     }
 
-    @GetMapping
-    public List<Achievement> getAll() {
-        return achievementService.getAll();
+    // GET semua achievement milik user tertentu (siswa login)
+    @GetMapping("/{userId}")
+    public ResponseEntity<List<Achievement>> getUserAchievements(@PathVariable Long userId) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<Achievement> achievements = service.getUserAchievements(userId);
+        if (achievements.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(achievements);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Achievement> getById(@PathVariable Long id) {
-        return achievementService.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    // GET + cek otomatis (bisa dipanggil dari FE)
+    @GetMapping("/check/{userId}")
+    public ResponseEntity<List<Achievement>> checkAndGet(@PathVariable Long userId) {
+        if (userId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<Achievement> achievements = service.getUserAchievements(userId);
+        if (achievements.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(achievements);
     }
 
-    @PostMapping
-    public Achievement create(@RequestBody Achievement achievement) {
-        return achievementService.create(achievement);
+    // POST tambah achievement untuk user
+    @PostMapping("/{userId}")
+    public ResponseEntity<Achievement> addAchievement(
+            @PathVariable Long userId,
+            @RequestBody Achievement achievement
+    ) {
+        if (userId == null || achievement == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Achievement saved = service.addAchievement(userId, achievement);
+        return ResponseEntity.ok(saved);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Achievement> update(@PathVariable Long id, @RequestBody Achievement achievement) {
+    // PUT update status achievement (unlock/lock)
+    @PutMapping("/{achievementId}")
+    public ResponseEntity<Achievement> updateAchievement(
+            @PathVariable Long achievementId,
+            @RequestParam boolean unlocked
+    ) {
         try {
-            return ResponseEntity.ok(achievementService.update(id, achievement));
+            Achievement updated = service.updateAchievement(achievementId, unlocked);
+            return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        achievementService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 }

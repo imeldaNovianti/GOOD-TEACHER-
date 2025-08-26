@@ -12,13 +12,17 @@ import java.util.List;
 
 @Repository
 public interface KuisionerJawabanRepository extends JpaRepository<KuisionerJawaban, Long> {
+    
     List<KuisionerJawaban> findBySiswa(User siswa);
     List<KuisionerJawaban> findByGuruMapel(GuruMapel guruMapel);
     List<KuisionerJawaban> findByPertanyaan(Pertanyaan pertanyaan);
 
-    // ✅ Query custom untuk statistik rata-rata per guru
+    // Statistik rata-rata per guru
     @Query("SELECT k.guruMapel.namaGuru, k.guruMapel.mataPelajaran, AVG(k.jawaban) " +
            "FROM KuisionerJawaban k " +
            "GROUP BY k.guruMapel.namaGuru, k.guruMapel.mataPelajaran")
     List<Object[]> getRataRataPerGuru();
+
+    // ✅ Pengecekan spesifik siswa + guru
+    boolean existsBySiswaIdAndGuruMapelId(Long siswaId, Long guruMapelId);
 }

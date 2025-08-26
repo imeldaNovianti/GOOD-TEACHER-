@@ -41,8 +41,20 @@ public class KuisionerJawabanController {
     // CREATE banyak jawaban sekaligus
     @PostMapping("/submit")
     public ResponseEntity<String> submit(@RequestBody List<KuisionerJawaban> jawabanList) {
+        if (jawabanList.isEmpty()) {
+            return ResponseEntity.badRequest().body("List jawaban kosong!");
+        }
+
+        Long siswaId = jawabanList.get(0).getSiswa().getId();
+        Long guruId = jawabanList.get(0).getGuruMapel().getId();
+
+        // ✅ Validasi: siswa hanya bisa isi sekali per guru
+        if (kuisionerJawabanService.existsBySiswaIdAndGuruId(siswaId, guruId)) {
+            return ResponseEntity.badRequest().body("❌ Kuisioner untuk guru ini sudah pernah diisi!");
+        }
+
         kuisionerJawabanService.saveAll(jawabanList);
-        return ResponseEntity.ok("Jawaban kuisioner berhasil disimpan!");
+        return ResponseEntity.ok("✅ Jawaban kuisioner berhasil disimpan!");
     }
 
     // UPDATE
@@ -72,5 +84,15 @@ public class KuisionerJawabanController {
     @GetMapping("/statistik/guru")
     public List<Map<String, Object>> getStatistikPerGuru() {
         return kuisionerJawabanService.getRataRataPerGuru();
+    }
+
+    // ✅ Cek apakah siswa sudah isi kuisioner untuk guru tertentu
+    @GetMapping("/cek")
+    public Map<String, Boolean> cekSudahIsi(
+            @RequestParam Long siswaId,
+            @RequestParam Long guruId
+    ) {
+        boolean sudahIsi = kuisionerJawabanService.existsBySiswaIdAndGuruId(siswaId, guruId);
+        return Map.of("sudahIsi", sudahIsi);
     }
 }

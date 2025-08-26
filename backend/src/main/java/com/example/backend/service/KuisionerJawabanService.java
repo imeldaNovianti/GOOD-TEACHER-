@@ -19,6 +19,7 @@ public class KuisionerJawabanService {
         this.kuisionerJawabanRepository = kuisionerJawabanRepository;
     }
 
+    // ========================= CRUD =========================
     public List<KuisionerJawaban> getAll() {
         return kuisionerJawabanRepository.findAll();
     }
@@ -48,6 +49,7 @@ public class KuisionerJawabanService {
         kuisionerJawabanRepository.deleteById(id);
     }
 
+    // ========================= QUERY PER USER / GURU =========================
     public List<KuisionerJawaban> getBySiswa(User siswa) {
         return kuisionerJawabanRepository.findBySiswa(siswa);
     }
@@ -66,16 +68,15 @@ public class KuisionerJawabanService {
         return kuisionerJawabanRepository.findByPertanyaan(pertanyaan);
     }
 
-    // ✅ Tambahan untuk simpan banyak jawaban sekaligus
+    // ========================= SIMPAN BANYAK JAWABAN =========================
     public void saveAll(List<KuisionerJawaban> jawabanList) {
         jawabanList.forEach(j -> j.setCreatedAt(LocalDateTime.now()));
         kuisionerJawabanRepository.saveAll(jawabanList);
     }
 
-    // ✅ Statistik rata-rata per guru
+    // ========================= STATISTIK =========================
     public List<Map<String, Object>> getRataRataPerGuru() {
         List<Object[]> result = kuisionerJawabanRepository.getRataRataPerGuru();
-
         List<Map<String, Object>> response = new ArrayList<>();
         for (Object[] row : result) {
             Map<String, Object> map = new HashMap<>();
@@ -85,5 +86,26 @@ public class KuisionerJawabanService {
             response.add(map);
         }
         return response;
+    }
+
+    // ========================= HITUNGAN =========================
+    public int countBySiswa(Long siswaId) {
+        User siswa = new User();
+        siswa.setId(siswaId);
+        return kuisionerJawabanRepository.findBySiswa(siswa).size();
+    }
+
+    public int countTotalKuisioner() {
+        return (int) kuisionerJawabanRepository.findAll()
+                .stream()
+                .map(j -> j.getPertanyaan().getId())
+                .distinct()
+                .count();
+    }
+
+    // ========================= VALIDASI =========================
+    // Cek apakah siswa sudah isi kuisioner untuk guru tertentu
+    public boolean existsBySiswaIdAndGuruId(Long siswaId, Long guruId) {
+        return kuisionerJawabanRepository.existsBySiswaIdAndGuruMapelId(siswaId, guruId);
     }
 }

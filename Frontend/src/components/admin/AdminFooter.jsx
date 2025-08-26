@@ -4,6 +4,7 @@ import {
   FaTwitter,
   FaLinkedin,
 } from "react-icons/fa";
+import Logo from "../../assets/2-removebg-preview.png"; // import logo
 
 function AdminFooter() {
   return (
@@ -12,11 +13,10 @@ function AdminFooter() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
         
         {/* Brand Section */}
-        <div>
-          <h3 className="text-3xl font-extrabold tracking-wide hover:scale-105 transition-transform duration-500">
-            GoodTeacher
-          </h3>
-          <p className="text-sm text-gray-300 mt-3 leading-relaxed">
+        <div className="flex flex-col items-start">
+          {/* Logo PNG */}
+          <img src={Logo} alt="Logo" className="h-22 w-auto mb-2" />
+          <p className="text-sm text-gray-300 mt-1 leading-relaxed">
             Sistem Informasi Penilaian Kinerja Guru oleh Siswa.  
             Transparan, modern, dan profesional untuk mendukung pengelolaan data guru & siswa.
           </p>
@@ -26,7 +26,7 @@ function AdminFooter() {
         <div>
           <h3 className="text-lg font-bold mb-4">Informasi</h3>
           <ul className="space-y-2 text-sm">
-            {[
+            {[ 
               { name: "Tentang Kami", link: "/admin/about" },
               { name: "Laporan Kuisioner", link: "/admin/laporan" },
               { name: "Data Guru", link: "/admin/dataguru" },

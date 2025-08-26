@@ -25,6 +25,9 @@ public class User {
     @Column(nullable = false)
     private String kelas;
 
+    @Column(nullable = false)
+    private String role = "SISWA"; // default SISWA
+
     private String email;
     private String noHp;
     private String alamat;
@@ -40,6 +43,7 @@ public class User {
         this.namaLengkap = namaLengkap;
         this.nisn = nisn;
         this.kelas = kelas;
+        this.role = "SISWA";
     }
 
     @PrePersist
@@ -49,6 +53,9 @@ public class User {
             username = (nisn != null && !nisn.isBlank())
                     ? nisn
                     : "user" + System.currentTimeMillis();
+        }
+        if (role == null || role.isBlank()) {
+            role = "SISWA";
         }
     }
 
@@ -70,6 +77,9 @@ public class User {
 
     public String getKelas() { return kelas; }
     public void setKelas(String kelas) { this.kelas = kelas; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

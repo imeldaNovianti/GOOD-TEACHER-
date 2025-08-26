@@ -1,43 +1,43 @@
 import { useState } from "react";
 import { FaUserAlt, FaLock, FaSchool } from "react-icons/fa";
-import { motion } from "framer-motion";
+import axios from "axios";
 
 function Login() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "", role: "" });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) {
+    if (!form.email || !form.password || !form.role) {
       alert("Harap isi semua field.");
       return;
     }
-    alert(`Login dengan email: ${form.email}`);
+
+    try {
+      const res = await axios.post("http://localhost:8080/api/users/login", form);
+      alert(`✅ Login berhasil sebagai ${res.data.role}`);
+      
+      if (res.data.role === "admin") {
+        window.location.href = "/admin/dashboard";
+      } else {
+        window.location.href = "/siswa/dashboard";
+      }
+    } catch (err) {
+      alert("❌ Login gagal: " + err.response?.data);
+    }
   };
 
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 px-4 overflow-hidden font-sans">
-      {/* Background Educative Image */}
-      <img
-        src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1"
-        alt="education"
-        className="absolute inset-0 w-full h-full object-cover opacity-20"
-      />
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/60"></div>
-
-      {/* Card Login */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8, y: 50 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="relative w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-8 text-white z-10"
       >
-        {/* Logo */}
         <div className="flex justify-center items-center mb-6">
           <FaSchool className="text-5xl text-red-300 animate-bounce drop-shadow-lg" />
         </div>
@@ -52,8 +52,7 @@ function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email */}
-          <div className="flex items-center bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-red-400 transition">
+          <div className="flex items-center bg-white/10 border border-white/20 rounded-lg px-4 py-3">
             <FaUserAlt className="text-white/70 mr-3" />
             <input
               type="email"
@@ -66,8 +65,7 @@ function Login() {
             />
           </div>
 
-          {/* Password */}
-          <div className="flex items-center bg-white/10 border border-white/20 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-red-400 transition">
+          <div className="flex items-center bg-white/10 border border-white/20 rounded-lg px-4 py-3">
             <FaLock className="text-white/70 mr-3" />
             <input
               type="password"
@@ -80,7 +78,32 @@ function Login() {
             />
           </div>
 
-          {/* Button */}
+          {/* Pilihan Role */}
+          <div className="flex justify-center gap-4 mb-4">
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, role: "admin" })}
+              className={`px-4 py-2 rounded-lg ${
+                form.role === "admin"
+                  ? "bg-red-500 text-white"
+                  : "bg-white/20 text-gray-300"
+              }`}
+            >
+              Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, role: "siswa" })}
+              className={`px-4 py-2 rounded-lg ${
+                form.role === "siswa"
+                  ? "bg-red-500 text-white"
+                  : "bg-white/20 text-gray-300"
+              }`}
+            >
+              Siswa
+            </button>
+          </div>
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -90,17 +113,6 @@ function Login() {
             Login
           </motion.button>
         </form>
-
-        {/* Footer link */}
-        <p className="text-center text-sm text-gray-300 mt-6">
-          Belum punya akun?{" "}
-          <a
-            href="#"
-            className="text-red-300 hover:text-red-400 hover:underline transition"
-          >
-            Daftar disini
-          </a>
-        </p>
       </motion.div>
     </div>
   );

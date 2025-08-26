@@ -10,32 +10,16 @@ Bisa login ke sistem.
 Mengisi kuisioner untuk menilai guru pada mata pelajaran tertentu.
 
 Melihat hasil penilaian yang pernah diisi.
-
 Mencetak tiket bukti pengisian dalam bentuk PDF.
-
 Mengelola akun (update profil, password).
-
 Kesiswaan / BK (Admin)
-
 Login sebagai admin.
-
 Mengelola data master (CRUD):
-
 Data Siswa
-
 Data Guru
-
-Data Fakultas
-
-Data Jurusan
-
-Data Mata Pelajaran
-
 Data Pertanyaan Kuisioner
-
-Mengelola data pelajaran yang diampu guru.
-
 Melihat hasil kuisioner yang sudah diisi siswa.
+mendownloadd hasil laporan
 
 Melihat dan mengunduh rekapan skor kinerja guru dalam bentuk laporan.
 

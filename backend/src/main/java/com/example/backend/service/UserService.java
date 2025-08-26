@@ -5,8 +5,6 @@ import com.example.backend.repository.UserRepository;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
-// import java.util.Optional;
-
 @Service
 public class UserService {
 
@@ -16,7 +14,7 @@ public class UserService {
         this.repo = repo;
     }
 
-    // ✅ Ambil semua dengan pagination, sorting, search
+    // Pagination + search
     public Page<User> getAll(String search, int page, int size, String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ?
                 Sort.by(sortBy).descending() :
@@ -27,30 +25,28 @@ public class UserService {
             return repo.findAll(pageable);
         }
 
-        // search by namaLengkap OR nisn OR kelas OR email
         return repo.findByNamaLengkapContainingIgnoreCaseOrNisnContainingIgnoreCaseOrKelasContainingIgnoreCaseOrEmailContainingIgnoreCase(
                 search, search, search, search, pageable
         );
     }
 
-    // ✅ Ambil by ID
     public User getById(Long id) {
         return repo.findById(id).orElseThrow(() -> new RuntimeException("User tidak ditemukan"));
     }
 
-    // ✅ Create user baru
     public User save(User user) {
-        // fallback username → nisn
         if (user.getUsername() == null || user.getUsername().isBlank()) {
-            user.setUsername(user.getNisn());
+            user.setUsername(user.getNisn()); // fallback pakai NISN
         }
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             throw new RuntimeException("Password wajib diisi");
         }
+        if (user.getRole() == null || user.getRole().isBlank()) {
+            user.setRole("SISWA");
+        }
         return repo.save(user);
     }
 
-    // ✅ Update user
     public User update(Long id, User newUser) {
         User u = repo.findById(id).orElseThrow(() -> new RuntimeException("User tidak ditemukan"));
 
@@ -63,13 +59,12 @@ public class UserService {
         u.setTglLahir(newUser.getTglLahir());
         u.setNamaAyah(newUser.getNamaAyah());
         u.setNamaIbu(newUser.getNamaIbu());
+        u.setRole(newUser.getRole());
 
-        // hanya update password kalau diisi
         if (newUser.getPassword() != null && !newUser.getPassword().isBlank()) {
             u.setPassword(newUser.getPassword());
         }
 
-        // username default tetap nisn
         if (newUser.getUsername() != null && !newUser.getUsername().isBlank()) {
             u.setUsername(newUser.getUsername());
         } else if (u.getUsername() == null || u.getUsername().isBlank()) {
@@ -79,8 +74,15 @@ public class UserService {
         return repo.save(u);
     }
 
-    // ✅ Delete user
     public void delete(Long id) {
         repo.deleteById(id);
+    }
+
+    public User findByUsername(String username) {
+        return repo.findByUsername(username);
+    }
+
+    public User findByEmail(String email) {
+        return repo.findByEmail(email).orElse(null);
     }
 }
