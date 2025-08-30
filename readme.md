@@ -1,115 +1,137 @@
-Aplikasi ini adalah platform evaluasi kinerja guru yang memungkinkan siswa untuk memberikan penilaian (kuisioner) kepada guru/dosen secara online.
-Data yang dikumpulkan bisa dipakai oleh pihak kesiswaan (atau BK) untuk melihat performa guru, rekap hasil kuisioner, serta laporan skor kinerja.
+# Sistem Penilaian Kinerja Guru oleh Siswa
 
-🔑 Aktor utama dalam sistem:
+## Deskripsi
+Aplikasi ini dibuat untuk mempermudah proses penilaian kinerja guru oleh siswa secara digital. Siswa dapat mengisi kuisioner mengenai guru dan mata pelajaran tertentu, sementara admin dapat mengelola data guru, siswa, pertanyaan kuisioner, periode penilaian, serta melihat laporan dan analisis data. Aplikasi ini dirancang dengan UI modern, animasi interaktif, dan fitur lengkap untuk mendukung transparansi dan evaluasi akademik yang efektif.
 
-Siswa (Mahasiswa)
+Aplikasi ini mendukung:
+- Dashboard interaktif dengan chart dan ringkasan statistik.
+- Export laporan ke PDF atau Excel.
+- Sistem login untuk admin dan siswa dengan hak akses berbeda.
+- Animasi UI/UX menggunakan Framer Motion dan Tailwind CSS.
 
-Bisa login ke sistem.
+---
 
-Mengisi kuisioner untuk menilai guru pada mata pelajaran tertentu.
+## Fitur-Fitur
 
-Melihat hasil penilaian yang pernah diisi.
-Mencetak tiket bukti pengisian dalam bentuk PDF.
-Mengelola akun (update profil, password).
-Kesiswaan / BK (Admin)
-Login sebagai admin.
-Mengelola data master (CRUD):
-Data Siswa
-Data Guru
-Data Pertanyaan Kuisioner
-Melihat hasil kuisioner yang sudah diisi siswa.
-mendownloadd hasil laporan
+### 1. Dashboard Admin
+- Ringkasan statistik jumlah guru, siswa, dan kuisioner yang sudah diisi.
+- Chart interaktif rata-rata penilaian per guru.
+- Tabel detail statistik guru dengan sorting dan pagination.
+- Export laporan ke PDF atau Excel.
+- Highlight guru terbaik berdasarkan penilaian.
 
-Melihat dan mengunduh rekapan skor kinerja guru dalam bentuk laporan.
+### 2. Manajemen Guru
+- Tambah, edit, hapus data guru.
+- Filter, pencarian, dan sorting berdasarkan nama guru atau mata pelajaran.
+- Pagination untuk data guru banyak.
+- Feedback langsung terhadap guru.
 
-📌 Alur Sistem
+### 3. Manajemen Siswa
+- Tambah, edit, hapus data siswa.
+- Import data siswa dari file CSV (opsional).
+- Filter dan pencarian berdasarkan nama atau NISN.
+- Tampilkan detail profil siswa.
 
-Login
+### 4. Manajemen Kuisioner
+- Tambah, edit, hapus pertanyaan kuisioner.
+- Kelola periode penilaian (semester atau tahun ajaran).
+- Pilihan pertanyaan untuk tiap guru dan mata pelajaran.
+- Hasil kuisioner dapat dianalisis per periode.
 
-Siswa dan admin login dengan akun masing-masing (role-based access).
+### 5. Penilaian oleh Siswa
+- Login siswa menggunakan akun masing-masing.
+- Mengisi kuisioner untuk guru sesuai kelas dan mata pelajaran.
+- Memberikan feedback tambahan berupa saran atau komentar.
+- Melihat hasil rata-rata penilaian setelah submit.
 
-Bagi Siswa:
+### 6. Laporan & Analisis
+- Laporan lengkap dalam bentuk tabel dan grafik.
+- Export laporan ke PDF (menggunakan OpenPDF) dan Excel.
+- Filter laporan berdasarkan guru, periode, atau mata pelajaran.
+- Visualisasi data interaktif (bar chart, pie chart).
 
-Setelah login → pilih mata pelajaran/guru → isi kuisioner.
+### 7. UI/UX & Interaktivitas
+- Sidebar collapsible untuk admin.
+- Animasi smooth pada menu, tombol, dan chart.
+- Gradient background, hover effect, shadow, dan efek blur.
+- Dashboard modern dan responsif untuk desktop maupun mobile.
 
-Submit hasil kuisioner → sistem simpan ke database.
+### 8. Sistem Login & Security
+- Login untuk admin dan siswa dengan hak akses berbeda.
+- Logout aman dan proteksi halaman admin.
+- Validasi input dan sanitasi data untuk keamanan.
 
-Bisa lihat riwayat kuisioner yang pernah diisi.
+---
 
-Bisa unduh bukti pengisian dalam PDF.
+## Struktur Sidebar & Header
 
-Bagi Admin (Kesiswaan):
+### Admin Sidebar
+- Dashboard
+- Data Guru
+- Data Siswa
+- Pertanyaan
+- Periode
+- Kuisioner
+- Laporan
+- Feedback
+- About
+- Logout  
 
-Login sebagai admin.
+**Fitur:** Collapsible, animasi scale & highlight menu aktif, tombol logout dengan animasi.
 
-Kelola data master (CRUD siswa, guru, fakultas, jurusan, pertanyaan, mapel).
+### Siswa Header
+- Home
+- Isi Kuisioner
+- Hasil
+- Profile
+- Voice & Card (Achievement)
+- About
+- Logout  
 
-Lihat data kuisioner yang sudah masuk.
+**Fitur:** Gradient background, blur efek, animasi hover, indikator menu aktif.
 
-Buat laporan hasil penilaian → unduh dalam bentuk rekapan PDF.
 
-📌 Fitur Utama
-🔹 Fitur untuk Admin (Kesiswaan / BK)
+## Tech Stack
 
-Manajemen Master Data (CRUD):
+### Backend
+- Java 17
+- Spring Boot 3.5.x
+- Spring Data JPA
+- Spring Security
+- MySQL / MariaDB
+- OpenPDF (export PDF)
+- Lombok
 
-Siswa
+### Frontend
+- React 18 + Vite
+- Tailwind CSS
+- Framer Motion (animasi)
+- React Router DOM (routing)
+- React Icons
+- Axios (HTTP request)
 
-Guru
+### Tools & Lainnya
+- Git & GitHub
+- Node.js & npm/yarn
+- Postman (testing API)
+- VSCode / IDE favorit
 
-Fakultas
+---
 
-Jurusan
+## Cara Menjalankan Project
 
-Pertanyaan Kuisioner
+### Backend
+1. Clone repository:
+```bash
+git clone <URL_REPO>
+cd backend
 
-Mata Pelajaran
+Catatan
 
-Manajemen Data Pengajaran:
+Admin dapat mengelola seluruh data dan melihat laporan.
 
-Relasi guru ↔ mata pelajaran ↔ jurusan/fakultas.
+Siswa hanya dapat mengisi kuisioner dan melihat hasil penilaian.
 
-Monitoring Kuisioner:
+Semua data laporan dapat diexport ke PDF atau Excel.
 
-Melihat hasil kuisioner tiap guru.
-
-Melihat laporan skor per mata pelajaran.
-
-Unduh laporan dalam format PDF.
-
-🔹 Fitur untuk Siswa
-
-Manajemen Akun (CRUD):
-
-Edit profil (nama, jurusan, password).
-
-Pengisian Kuisioner:
-
-Pilih mata pelajaran & guru → isi pertanyaan → submit.
-
-Validasi agar 1 siswa hanya bisa mengisi 1x per mata pelajaran/guru.
-
-Lihat Hasil Kuisioner:
-
-Bisa cek kembali hasil yang pernah diisi.
-
-Cetak Bukti Pengisian:
-
-Download bukti pengisian dalam bentuk PDF tiket (misal: tanda bukti wajib untuk daftar ujian).
-
-📌 Output Sistem
-
-Admin → Laporan penilaian kinerja guru (rekap per guru, per mata pelajaran, per fakultas/jurusan).
-
-Siswa → Tiket bukti pengisian kuisioner dalam bentuk PDF.
-
-Database → Menyimpan seluruh data master + hasil kuisioner (bisa dipakai untuk analisis lebih lanjut).
-
-Kalau aku sederhanakan, sistemmu ini punya 3 kategori fitur:
-
-Data Master (Admin CRUD)
-
-Kuisioner (Siswa Isi & Admin Rekap)
-
-Laporan (PDF untuk admin & tiket siswa)
+Desain UI modern dengan animasi interaktif membuat aplikasi lebih menarik dan user-friendly.

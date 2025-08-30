@@ -4,9 +4,9 @@ import {
   createSiswa,
   updateSiswa,
   deleteSiswa,
-} from "../../api/adminApi";
-import Table from "../../components/common/Table";
-import Button from "../../components/common/Button";
+} from "../../api/adminApi"; // Mengimpor API untuk mendapatkan, membuat, memperbarui, dan menghapus data siswa
+import Table from "../../components/common/Table"; // Mengimpor komponen tabel
+import Button from "../../components/common/Button"; // Mengimpor komponen tombol
 import {
   FaEdit,
   FaTrash,
@@ -14,26 +14,28 @@ import {
   FaSortAmountDown,
   FaSortAmountUp,
   FaUndo,
-} from "react-icons/fa";
+} from "react-icons/fa"; // Mengimpor ikon dari react-icons
 
 const SORT_FIELDS = [
   { label: "Nama Lengkap", value: "namaLengkap" },
   { label: "NISN", value: "nisn" },
   { label: "Kelas", value: "kelas" },
-];
+]; // Menyusun array untuk opsi pengurutan berdasarkan nama lengkap, NISN, atau kelas
 
 function DataSiswa() {
-  const [rows, setRows] = useState([]);
-  const [totalElements, setTotalElements] = useState(0);
+  // Inisialisasi state untuk data dan pagination
+  const [rows, setRows] = useState([]); // Menyimpan data siswa yang akan ditampilkan dalam tabel
+  const [totalElements, setTotalElements] = useState(0); // Menyimpan jumlah total elemen siswa untuk pagination
 
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("namaLengkap");
-  const [sortDir, setSortDir] = useState("asc");
+  const [page, setPage] = useState(0); // Menyimpan nomor halaman untuk pagination
+  const [size, setSize] = useState(10); // Menyimpan jumlah data per halaman
+  const [search, setSearch] = useState(""); // Menyimpan kata kunci pencarian
+  const [sortBy, setSortBy] = useState("namaLengkap"); // Menyimpan kolom yang digunakan untuk pengurutan
+  const [sortDir, setSortDir] = useState("asc"); // Menyimpan arah pengurutan (asc atau desc)
 
-  const [editId, setEditId] = useState(null);
+  const [editId, setEditId] = useState(null); // Menyimpan ID siswa yang sedang diedit
 
+  // Inisialisasi form dengan nilai default kosong
   const initialForm = {
     namaLengkap: "",
     nisn: "",
@@ -46,62 +48,65 @@ function DataSiswa() {
     namaIbu: "",
     password: "",
   };
-  const [form, setForm] = useState(initialForm);
-  const [errors, setErrors] = useState({});
-  const debounceRef = useRef(null);
+  const [form, setForm] = useState(initialForm); // Menyimpan data form yang akan diedit atau ditambah
+  const [errors, setErrors] = useState({}); // Menyimpan error validasi untuk form
+  const debounceRef = useRef(null); // Referensi untuk debounce pencarian agar tidak mengirim request terlalu cepat
 
   const totalPages = useMemo(
     () => Math.ceil(totalElements / size) || 1,
     [totalElements, size]
-  );
+  ); // Menghitung jumlah total halaman berdasarkan total elemen dan ukuran per halaman
 
-  // validasi form
+  // Fungsi validasi form sebelum submit
   const validate = () => {
-    const e = {};
-    if (!form.namaLengkap.trim()) e.namaLengkap = "Nama lengkap wajib diisi";
-    if (!form.nisn.trim()) e.nisn = "NISN wajib diisi";
-    if (!form.kelas.trim()) e.kelas = "Kelas wajib diisi";
-    if (!editId && !form.password.trim())
-      e.password = "Password wajib diisi"; // hanya wajib saat create
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    const e = {}; // Objek untuk menyimpan error validasi
+    if (!form.namaLengkap.trim()) e.namaLengkap = "Nama lengkap wajib diisi"; // Validasi nama lengkap
+    if (!form.nisn.trim()) e.nisn = "NISN wajib diisi"; // Validasi NISN
+    if (!form.kelas.trim()) e.kelas = "Kelas wajib diisi"; // Validasi kelas
+    if (!editId && !form.password.trim()) // Validasi password hanya untuk tambah siswa
+      e.password = "Password wajib diisi"; 
+    setErrors(e); // Menyimpan error ke state
+    return Object.keys(e).length === 0; // Mengembalikan true jika tidak ada error
   };
 
+  // Fungsi untuk mereset form
   const resetForm = () => {
-    setForm(initialForm);
-    setErrors({});
-    setEditId(null);
+    setForm(initialForm); // Mengembalikan form ke nilai default
+    setErrors({}); // Menghapus error validasi
+    setEditId(null); // Menghapus ID edit
   };
 
-  // fetch data
+  // Fungsi untuk mengambil data siswa dari server
   const fetchData = async () => {
     const res = await getSiswa({ search, sortBy, sortDir, page, size });
-    setRows(res.data.content || res.data || []);
+    setRows(res.data.content || res.data || []); // Menyimpan data siswa ke dalam state
     setTotalElements(
       typeof res.data.totalElements === "number"
         ? res.data.totalElements
         : res.data.content
         ? res.data.content.length
         : 0
-    );
+    ); // Menyimpan jumlah total elemen untuk pagination
   };
 
+  // Efek samping untuk mengambil data saat terjadi perubahan pada pagination atau pencarian
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line
   }, [page, size, sortBy, sortDir]);
 
+  // Efek samping untuk menangani debounce pencarian
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current); // Membersihkan timeout sebelumnya
     debounceRef.current = setTimeout(() => {
-      setPage(0);
-      fetchData();
-    }, 400);
-    return () => clearTimeout(debounceRef.current);
+      setPage(0); // Reset ke halaman pertama ketika pencarian berubah
+      fetchData(); // Ambil data berdasarkan pencarian
+    }, 400); // Delay 400ms sebelum mengirim request
+    return () => clearTimeout(debounceRef.current); // Membersihkan timeout saat komponen unmount
     // eslint-disable-next-line
   }, [search]);
 
-  // edit
+  // Fungsi untuk membuka form edit dan mengisi nilai form dengan data yang akan diedit
   const openEdit = (row) => {
     setForm({
       namaLengkap: row.namaLengkap || "",
@@ -115,35 +120,35 @@ function DataSiswa() {
       namaIbu: row.namaIbu || "",
       password: "",
     });
-    setEditId(row.id);
+    setEditId(row.id); // Menyimpan ID siswa yang akan diedit
   };
 
-  // delete
+  // Fungsi untuk menghapus siswa berdasarkan ID
   const onDelete = async (id) => {
-    if (confirm("Yakin hapus siswa ini?")) {
-      await deleteSiswa(id);
-      if (rows.length === 1 && page > 0) {
-        setPage((p) => p - 1);
+    if (confirm("Yakin hapus siswa ini?")) { // Konfirmasi sebelum menghapus
+      await deleteSiswa(id); // Menghapus data siswa
+      if (rows.length === 1 && page > 0) { // Jika data yang ditampilkan hanya satu dan berada di halaman selain pertama
+        setPage((p) => p - 1); // Kembali ke halaman sebelumnya
       } else {
-        fetchData();
+        fetchData(); // Mengambil ulang data setelah penghapusan
       }
     }
   };
 
-  // submit
+  // Fungsi untuk mengirim form (untuk tambah atau update siswa)
   const onSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    const payload = { ...form };
-    if (!payload.password) delete payload.password;
+    e.preventDefault(); // Mencegah form untuk melakukan submit secara default
+    if (!validate()) return; // Validasi form sebelum lanjut
+    const payload = { ...form }; // Menyusun data dari form
+    if (!payload.password) delete payload.password; // Menghapus password jika kosong saat update
 
     if (editId) {
-      await updateSiswa(editId, payload);
+      await updateSiswa(editId, payload); // Update data siswa jika editId ada
     } else {
-      await createSiswa(payload);
+      await createSiswa(payload); // Tambah data siswa jika tidak ada editId
     }
-    resetForm();
-    fetchData();
+    resetForm(); // Reset form setelah submit
+    fetchData(); // Mengambil data siswa terbaru
   };
 
   return (
@@ -155,6 +160,7 @@ function DataSiswa() {
         </h2>
 
         <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Input fields untuk namaLengkap, nisn, kelas, email, noHp, alamat */}
           {["namaLengkap", "nisn", "kelas", "email", "noHp", "alamat"].map(
             (field) => (
               <div key={field} className="flex flex-col">
@@ -177,7 +183,7 @@ function DataSiswa() {
               </div>
             )
           )}
-
+          {/* Input fields untuk tglLahir, namaAyah, namaIbu */}
           <div>
             <label className="text-sm font-semibold">Tanggal Lahir</label>
             <input
@@ -189,7 +195,6 @@ function DataSiswa() {
               className="border rounded-md p-2 w-full focus:ring-2 focus:ring-red-300"
             />
           </div>
-
           <div>
             <label className="text-sm font-semibold">Nama Ayah</label>
             <input
@@ -201,7 +206,6 @@ function DataSiswa() {
               className="border rounded-md p-2 w-full focus:ring-2 focus:ring-red-300"
             />
           </div>
-
           <div>
             <label className="text-sm font-semibold">Nama Ibu</label>
             <input
@@ -214,6 +218,7 @@ function DataSiswa() {
             />
           </div>
 
+          {/* Password field only for adding new student */}
           {!editId && (
             <div>
               <label className="text-sm font-semibold">Password</label>
@@ -358,7 +363,7 @@ function DataSiswa() {
               </td>
             </tr>
           ))}
-
+          {/* Jika tidak ada data */}
           {rows.length === 0 && (
             <tr>
               <td colSpan={9} className="px-4 py-8 text-center text-gray-500">

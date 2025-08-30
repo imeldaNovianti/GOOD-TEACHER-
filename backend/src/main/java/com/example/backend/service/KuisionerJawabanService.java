@@ -5,6 +5,7 @@ import com.example.backend.model.GuruMapel;
 import com.example.backend.model.Pertanyaan;
 import com.example.backend.model.User;
 import com.example.backend.repository.KuisionerJawabanRepository;
+import com.example.backend.repository.GuruMapelRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,25 +15,33 @@ import java.util.*;
 public class KuisionerJawabanService {
 
     private final KuisionerJawabanRepository kuisionerJawabanRepository;
+    private final GuruMapelRepository guruMapelRepository;
 
-    public KuisionerJawabanService(KuisionerJawabanRepository kuisionerJawabanRepository) {
+    public KuisionerJawabanService(KuisionerJawabanRepository kuisionerJawabanRepository,
+                                   GuruMapelRepository guruMapelRepository) {
         this.kuisionerJawabanRepository = kuisionerJawabanRepository;
+        this.guruMapelRepository = guruMapelRepository;
     }
 
     // ========================= CRUD =========================
+    
+    // Mengambil semua jawaban kuisioner
     public List<KuisionerJawaban> getAll() {
         return kuisionerJawabanRepository.findAll();
     }
 
+    // Mengambil jawaban kuisioner berdasarkan ID
     public Optional<KuisionerJawaban> getById(Long id) {
         return kuisionerJawabanRepository.findById(id);
     }
 
+    // Membuat jawaban kuisioner baru dan menyimpannya ke database
     public KuisionerJawaban create(KuisionerJawaban jawaban) {
-        jawaban.setCreatedAt(LocalDateTime.now());
+        jawaban.setCreatedAt(LocalDateTime.now()); // Set waktu pembuatan
         return kuisionerJawabanRepository.save(jawaban);
     }
 
+    // Memperbarui jawaban kuisioner berdasarkan ID
     public KuisionerJawaban update(Long id, KuisionerJawaban jawabanDetails) {
         return kuisionerJawabanRepository.findById(id)
                 .map(jawaban -> {
@@ -45,36 +54,53 @@ public class KuisionerJawabanService {
                 .orElseThrow(() -> new RuntimeException("KuisionerJawaban not found with id " + id));
     }
 
+    // Menghapus jawaban kuisioner berdasarkan ID
     public void delete(Long id) {
         kuisionerJawabanRepository.deleteById(id);
     }
 
     // ========================= QUERY PER USER / GURU =========================
+    
+    // Mendapatkan jawaban kuisioner berdasarkan siswa
     public List<KuisionerJawaban> getBySiswa(User siswa) {
         return kuisionerJawabanRepository.findBySiswa(siswa);
     }
 
+    // Mendapatkan jawaban kuisioner berdasarkan ID siswa
     public List<KuisionerJawaban> getBySiswaId(Long siswaId) {
         User siswa = new User();
         siswa.setId(siswaId);
         return kuisionerJawabanRepository.findBySiswa(siswa);
     }
 
+    // Dipakai di AchievementService untuk mendapatkan jawaban siswa
+    public List<KuisionerJawaban> getJawabanBySiswa(Long siswaId) {
+        User siswa = new User();
+        siswa.setId(siswaId);
+        return kuisionerJawabanRepository.findBySiswa(siswa);
+    }
+
+    // Mendapatkan jawaban kuisioner berdasarkan guru mapel
     public List<KuisionerJawaban> getByGuruMapel(GuruMapel guruMapel) {
         return kuisionerJawabanRepository.findByGuruMapel(guruMapel);
     }
 
+    // Mendapatkan jawaban kuisioner berdasarkan pertanyaan
     public List<KuisionerJawaban> getByPertanyaan(Pertanyaan pertanyaan) {
         return kuisionerJawabanRepository.findByPertanyaan(pertanyaan);
     }
 
     // ========================= SIMPAN BANYAK JAWABAN =========================
+    
+    // Menyimpan banyak jawaban kuisioner sekaligus
     public void saveAll(List<KuisionerJawaban> jawabanList) {
-        jawabanList.forEach(j -> j.setCreatedAt(LocalDateTime.now()));
+        jawabanList.forEach(j -> j.setCreatedAt(LocalDateTime.now())); // Set waktu pembuatan
         kuisionerJawabanRepository.saveAll(jawabanList);
     }
 
     // ========================= STATISTIK =========================
+    
+    // Mendapatkan rata-rata jawaban per guru
     public List<Map<String, Object>> getRataRataPerGuru() {
         List<Object[]> result = kuisionerJawabanRepository.getRataRataPerGuru();
         List<Map<String, Object>> response = new ArrayList<>();
@@ -89,12 +115,15 @@ public class KuisionerJawabanService {
     }
 
     // ========================= HITUNGAN =========================
+    
+    // Menghitung jumlah jawaban kuisioner per siswa
     public int countBySiswa(Long siswaId) {
         User siswa = new User();
         siswa.setId(siswaId);
         return kuisionerJawabanRepository.findBySiswa(siswa).size();
     }
 
+    // Menghitung total kuisioner yang ada
     public int countTotalKuisioner() {
         return (int) kuisionerJawabanRepository.findAll()
                 .stream()
@@ -103,8 +132,14 @@ public class KuisionerJawabanService {
                 .count();
     }
 
+    // Mendapatkan semua guru mapel
+    public List<GuruMapel> getAllGuru() {
+        return guruMapelRepository.findAll();
+    }
+
     // ========================= VALIDASI =========================
-    // Cek apakah siswa sudah isi kuisioner untuk guru tertentu
+    
+    // Mengecek apakah ada jawaban kuisioner dari siswa dengan guru mapel tertentu
     public boolean existsBySiswaIdAndGuruId(Long siswaId, Long guruId) {
         return kuisionerJawabanRepository.existsBySiswaIdAndGuruMapelId(siswaId, guruId);
     }

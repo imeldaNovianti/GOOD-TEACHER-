@@ -16,18 +16,22 @@ public class PeriodeKuisionerService {
         this.periodeRepo = periodeRepo;
     }
 
+    // Mengambil semua periode kuisioner
     public List<PeriodeKuisioner> getAll() {
         return periodeRepo.findAll();
     }
 
+    // Mengambil periode kuisioner berdasarkan ID
     public Optional<PeriodeKuisioner> getById(Long id) {
         return periodeRepo.findById(id);
     }
 
+    // Membuat periode kuisioner baru dan menyimpannya
     public PeriodeKuisioner create(PeriodeKuisioner periode) {
         return periodeRepo.save(periode);
     }
 
+    // Memperbarui periode kuisioner berdasarkan ID
     public PeriodeKuisioner update(Long id, PeriodeKuisioner periodeDetails) {
         return periodeRepo.findById(id)
                 .map(periode -> {
@@ -40,10 +44,12 @@ public class PeriodeKuisionerService {
                 .orElseThrow(() -> new RuntimeException("PeriodeKuisioner not found with id " + id));
     }
 
+    // Menghapus periode kuisioner berdasarkan ID
     public void delete(Long id) {
         periodeRepo.deleteById(id);
     }
 
+    // Mendapatkan periode kuisioner berdasarkan status
     public List<PeriodeKuisioner> getByStatus(String status) {
         return periodeRepo.findByStatus(status);
     }

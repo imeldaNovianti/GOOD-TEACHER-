@@ -1,49 +1,59 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import Button from "../../components/common/Button";
-import Table from "../../components/common/Table";
+import Button from "../../components/common/Button"; // Komponen tombol reusable
+import Table from "../../components/common/Table"; // Komponen tabel reusable
 import {
   getPeriode,
   createPeriode,
   updatePeriode,
   deletePeriode,
-} from "../../api/adminApi"; // <- bikin di api
+} from "../../api/adminApi"; // API untuk CRUD periode
 
 function Periode() {
+  // State untuk data periode
   const [rows, setRows] = useState([]);
+  
+  // State untuk form tambah/edit periode
   const [form, setForm] = useState({
     nama: "",
     mulai: "",
     selesai: "",
     status: "TIDAK_AKTIF",
   });
+
+  // State untuk menandai periode yang sedang diedit
   const [editId, setEditId] = useState(null);
 
+  // Fungsi untuk load semua data periode dari API
   const loadData = async () => {
-    const res = await getPeriode();
-    setRows(res.data);
+    const res = await getPeriode(); // Ambil data dari backend
+    setRows(res.data); // Simpan ke state rows
   };
 
+  // Jalankan loadData saat komponen mount
   useEffect(() => {
     loadData();
   }, []);
 
+  // Reset form ke default dan hapus editId
   const resetForm = () => {
     setForm({ nama: "", mulai: "", selesai: "", status: "TIDAK_AKTIF" });
     setEditId(null);
   };
 
+  // Submit form untuk tambah atau update periode
   const onSubmit = async (e) => {
     e.preventDefault();
     if (editId) {
-      await updatePeriode(editId, form);
+      await updatePeriode(editId, form); // Update jika ada editId
     } else {
-      await createPeriode(form);
+      await createPeriode(form); // Tambah data baru
     }
     resetForm();
-    loadData();
+    loadData(); // Reload data setelah submit
   };
 
+  // Set form untuk edit data tertentu
   const onEdit = (row) => {
     setForm({
       nama: row.nama,
@@ -54,10 +64,11 @@ function Periode() {
     setEditId(row.id);
   };
 
+  // Hapus periode tertentu
   const onDelete = async (id) => {
     if (confirm("Yakin hapus data ini?")) {
       await deletePeriode(id);
-      loadData();
+      loadData(); // Reload data setelah hapus
     }
   };
 
@@ -65,12 +76,13 @@ function Periode() {
     <div className="space-y-6 p-6">
       <h2 className="text-2xl font-bold">Periode Kuisioner</h2>
 
-      {/* Form tambah/edit */}
+      {/* Form tambah/edit periode */}
       <form
         onSubmit={onSubmit}
         className="bg-white p-5 shadow rounded-lg border space-y-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Input Nama Periode */}
           <div>
             <label className="block font-semibold mb-1">Nama Periode</label>
             <input
@@ -81,6 +93,8 @@ function Periode() {
               required
             />
           </div>
+
+          {/* Input Tanggal Mulai */}
           <div>
             <label className="block font-semibold mb-1">Tanggal Mulai</label>
             <input
@@ -91,6 +105,8 @@ function Periode() {
               required
             />
           </div>
+
+          {/* Input Tanggal Selesai */}
           <div>
             <label className="block font-semibold mb-1">Tanggal Selesai</label>
             <input
@@ -101,6 +117,8 @@ function Periode() {
               required
             />
           </div>
+
+          {/* Input Status */}
           <div>
             <label className="block font-semibold mb-1">Status</label>
             <select
@@ -114,6 +132,7 @@ function Periode() {
           </div>
         </div>
 
+        {/* Tombol Submit dan Batal */}
         <div className="flex gap-3">
           <Button type="submit" className="!bg-red-900 hover:!bg-red-800">
             {editId ? "Update" : "Simpan"}
@@ -130,7 +149,7 @@ function Periode() {
         </div>
       </form>
 
-      {/* Table */}
+      {/* Table data periode */}
       <div className="bg-white shadow rounded-lg border overflow-hidden">
         <Table headers={["Nama", "Mulai", "Selesai", "Status", "Aksi"]}>
           {rows.map((p) => (

@@ -1,626 +1,761 @@
 // Achievement.jsx
-import { useState, useEffect, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Confetti from "react-confetti";
-import {PieChart,Pie,Cell,ResponsiveContainer,BarChart,Bar,XAxis,YAxis,Tooltip,} from "recharts";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useState, useEffect, useMemo, useRef } from "react"; 
+import { motion, AnimatePresence } from "framer-motion"; 
+import Confetti from "react-confetti"; 
+import {PieChart,Pie,Cell,ResponsiveContainer,BarChart, Bar,XAxis,YAxis,Tooltip,  Legend} from "recharts"; // Import komponen chart dari recharts
+import { toast, ToastContainer } from "react-toastify"; // Import notifikasi toast
+import "react-toastify/dist/ReactToastify.css"; // Import stylesheet untuk toast
+import { Trophy, MessageSquare, ThumbsUp, Star, Award, Gift, Heart, Zap, TrendingUp,Users,BookOpen,  Calendar,  BarChart3} from "lucide-react"; // Import icon dari lucide-react
 
+const BASE_URL = "http://localhost:8080/api/feedback"; //  API feedback
 
-const BASE_URL = "http://localhost:8080/api/feedback";
-
-const THEME_CLASSES = {
-  yellow: "bg-yellow-50 border-yellow-200",
-  pink: "bg-pink-50 border-pink-200",
-  green: "bg-green-50 border-green-200",
-  blue: "bg-blue-50 border-blue-200",
-  red: "bg-red-50 border-red-200",
-  purple: "bg-purple-50 border-purple-200",
+const THEME_CLASSES = { // Objek untuk kelas CSS berdasarkan tema
+  red: "bg-red-100 border-red-300",
+  maroon: "bg-[#800020] bg-opacity-10 border-[#800020] border-opacity-30",
+  pink: "bg-pink-100 border-pink-300",
+  gold: "bg-amber-100 border-amber-300",
+  crimson: "bg-[#DC143C] bg-opacity-10 border-[#DC143C] border-opacity-30"
 };
 
-const PIE_COLORS = ["#d90429", "#ef233c", "#f77f00", "#fcbf49", "#ffdd57"];
+const PIE_COLORS = ["#800020", "#DC143C", "#B22222", "#8B0000", "#CC5500"]; // Warna untuk chart pie
 
 export default function Achievement() {
-  // form state
-  const [feedbackType, setFeedbackType] = useState("SARAN");
-  const [judul, setJudul] = useState("");
-  const [isi, setIsi] = useState("");
-  const [anonim, setAnonim] = useState(false);
-  const [theme, setTheme] = useState("yellow");
-  const [submitting, setSubmitting] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
+  // State untuk form feedback
+  const [feedbackType, setFeedbackType] = useState("SARAN"); // State untuk jenis feedback (UCAPAN/SARAN)
+  const [judul, setJudul] = useState(""); // State untuk judul saran
+  const [isi, setIsi] = useState(""); // State untuk isi feedback
+  const [anonim, setAnonim] = useState(false); // State untuk status anonim
+  const [theme, setTheme] = useState("maroon"); // State untuk tema ucapan
+  const [submitting, setSubmitting] = useState(false); // State untuk status pengiriman
+  const [showConfetti, setShowConfetti] = useState(false); // State untuk menampilkan confetti
 
-  // data
-  const [allFeedback, setAllFeedback] = useState([]);
-  const [ucapanList, setUcapanList] = useState([]);
-  const [saranList, setSaranList] = useState([]);
-
-  // UI
-  const [selectedCard, setSelectedCard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [runningMarquee, setRunningMarquee] = useState(true);
-
-  // user
-  const user = JSON.parse(localStorage.getItem("user")) || null;
-  const userId = user?.id ?? null;
-  const username = user?.namaLengkap ?? user?.username ?? "Anda";
-
-  // gamification
-  const [submitCount, setSubmitCount] = useState(() => {
-    const raw = localStorage.getItem("gt_submit_count");
-    return raw ? Number(raw) : 0;
+  // State untuk data feedback
+  const [allFeedback, setAllFeedback] = useState([]); // State untuk semua feedback
+  const [ucapanList, setUcapanList] = useState([]); // State untuk list ucapan
+  const [saranList, setSaranList] = useState([]); // State untuk list saran
+  const [stats, setStats] = useState({ // State untuk statistik feedback
+    totalFeedback: 0,
+    totalUcapan: 0,
+    totalSaran: 0,
+    topContributors: []
   });
 
-  // emoji set for random decoration on cards
-  const EMOJIS = ["🎉", "👏", "❤️", "🌟", "✨", "🔥", "🏆", "🤩"];
+  // State untuk UI
+  const [selectedCard, setSelectedCard] = useState(null); // State untuk kartu yang dipilih
+  const [loading, setLoading] = useState(true); // State untuk status loading
+  const [activeTab, setActiveTab] = useState("feedback"); // State untuk tab aktif
+  const [achievements, setAchievements] = useState([]); // State untuk achievements
 
+  // Ambil data user dari localStorage
+  const user = JSON.parse(localStorage.getItem("user")) || null; // Parse data user dari localStorage
+  const userId = user?.id ?? null; // Ambil user ID jika ada
+  const username = user?.namaLengkap ?? user?.username ?? "Anda"; // Ambil username atau gunakan default
+
+  // State untuk gamification
+  const [submitCount, setSubmitCount] = useState(() => { // State untuk jumlah submit, diambil dari localStorage
+    const raw = localStorage.getItem("gt_submit_count"); // Ambil data dari localStorage
+    return raw ? Number(raw) : 0; // Kembalikan 0 jika tidak ada
+  });
+
+  const [windowSize, setWindowSize] = useState({ // State untuk ukuran window (untuk confetti)
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  // Daftar achievements yang telah ditentukan
+  const ACHIEVEMENTS_LIST = [
+    { id: 1, name: "Pemberi Ucapan Pertama", icon: "🎯", description: "Memberikan ucapan pertama", earned: submitCount >= 1 },
+    { id: 2, name: "Kontributor Aktif", icon: "🏆", description: "Telah memberikan 5 feedback", earned: submitCount >= 5 },
+    { id: 3, name: "Ahli Saran", icon: "💡", description: "Telah memberikan 10 saran", earned: submitCount >= 10 },
+    { id: 4, name: "Penyemangat", icon: "❤️", description: "Telah memberikan 15 ucapan", earned: submitCount >= 15 },
+    { id: 5, name: "Super Contributor", icon: "⭐", description: "Telah memberikan 20 feedback", earned: submitCount >= 20 },
+  ];
+
+  // Variants untuk animasi kartu
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+
+  // Effect untuk menangani resize window (untuk confetti)
+  useEffect(() => {
+    const handleResize = () => { // Fungsi untuk update ukuran window
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize); // Tambahkan event listener
+    return () => window.removeEventListener('resize', handleResize); // Hapus event listener saat unmount
+  }, []);
+
+  // Fungsi untuk mengambil data feedback dari API
   const fetchFeedback = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(BASE_URL);
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Fetch error:", res.status, text);
-        toast.error("Gagal ambil data dari server.");
-        setLoading(false);
+      setLoading(true); // Set loading menjadi true
+      const res = await fetch(BASE_URL); // Fetch data dari API
+      if (!res.ok) { // Jika response tidak ok
+        toast.error("Gagal ambil data dari server."); // Tampilkan error toast
+        setLoading(false); // Set loading false
         return;
       }
-      const data = await res.json();
+      const data = await res.json(); // Parse response JSON
+
+      // Normalisasi data feedback
       const normalized = (data || []).map((f) => ({
         id: f.id,
-        jenis: f.jenis,
-        judul: f.judul ?? null,
-        isi: f.isi ?? f.content ?? "",
+        jenis: f.type,
+        judul: f.title ?? null,
+        isi: f.content ?? "",
         anonim: !!f.anonim,
-        theme: f.theme ?? "yellow",
+        theme: f.themeColor ?? "maroon",
         userId: f.userId ?? f.user?.id ?? null,
-        nama: f.nama ?? f.user?.namaLengkap ?? null,
-        status: f.status ?? "Diterima",
-        createdAt: f.createdAt ?? f.createdAtString ?? null,
+        nama: f.user?.namaLengkap ?? null,
+        createdAt: f.createdAt ?? null,
         likes: typeof f.likes === "number" ? f.likes : 0,
         raw: f,
       }));
-      setAllFeedback(normalized);
-      setUcapanList(normalized.filter((x) => x.jenis === "UCAPAN").reverse());
-      setSaranList(normalized.filter((x) => x.jenis === "SARAN").reverse());
-    } catch (err) {
-      console.error("Error fetching feedback:", err);
-      toast.error("Terjadi kesalahan saat mengambil data.");
+
+      setAllFeedback(normalized); // Set state semua feedback
+      setUcapanList(normalized.filter((x) => x.jenis === "UCAPAN").reverse()); // Set state ucapan (terbaru di atas)
+      setSaranList(normalized.filter((x) => x.jenis === "SARAN").reverse()); // Set state saran (terbaru di atas)
+      
+      // Hitung statistik
+      const totalUcapan = normalized.filter(x => x.jenis === "UCAPAN").length; // Hitung total ucapan
+      const totalSaran = normalized.filter(x => x.jenis === "SARAN").length; // Hitung total saran
+      
+      setStats({ // Set state statistik
+        totalFeedback: normalized.length,
+        totalUcapan,
+        totalSaran,
+        topContributors: [...new Set(normalized.filter(f => !f.anonim).map(f => f.nama))] // Ambil top contributors (non-anonim)
+          .slice(0, 5)
+      });
+    } catch (err) { // Tangani error
+      console.error("Error fetching feedback:", err); // Log error
+      toast.error("Terjadi kesalahan saat mengambil data."); // Tampilkan error toast
     } finally {
-      setLoading(false);
+      setLoading(false); // Set loading false
     }
   };
 
+  // Effect untuk fetch feedback dan set achievements saat component mount atau submitCount berubah
   useEffect(() => {
-    fetchFeedback();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchFeedback(); // Panggil fetchFeedback
+    setAchievements(ACHIEVEMENTS_LIST); // Set achievements dari list
+  }, [submitCount]);
 
-  const stats = useMemo(() => {
-    const totals = allFeedback.length;
-    const ucapan = allFeedback.filter((f) => f.jenis === "UCAPAN").length;
-    const saran = allFeedback.filter((f) => f.jenis === "SARAN").length;
-    const authorCount = {};
-    const guruCount = {};
-    allFeedback.forEach((f) => {
-      const author = f.nama ?? (f.anonim ? "Anonim" : "User");
-      authorCount[author] = (authorCount[author] || 0) + 1;
-      const guruName = f.raw?.guruMapel?.namaGuru;
-      if (guruName) guruCount[guruName] = (guruCount[guruName] || 0) + 1;
-    });
-    const authorLeaderboard = Object.entries(authorCount)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-    const guruLeaderboard = Object.entries(guruCount)
-      .map(([nama, count]) => ({ nama, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-    const pie = [
-      { name: "Ucapan", value: ucapan },
-      { name: "Saran", value: saran },
-    ];
-    return { totals, ucapan, saran, pie, authorLeaderboard, guruLeaderboard };
-  }, [allFeedback]);
-
-  const handleLike = async (id) => {
-    setAllFeedback((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, likes: (f.likes || 0) + 1 } : f))
-    );
-    try {
-      const res = await fetch(`${BASE_URL}/${id}/like`, { method: "POST" });
-      if (!res.ok) {
-        const txt = await res.text();
-        console.warn("Like endpoint failed:", res.status, txt);
-        toast.info("Like disimpan lokal (endpoint like belum tersedia).");
-        return;
-      }
-      fetchFeedback();
-    } catch (err) {
-      console.error("Like error:", err);
-      toast.error("Gagal memberi like ke server.");
-    }
-  };
-
+  // Fungsi untuk handle submit feedback
   const handleSubmit = async () => {
-    if ((feedbackType === "SARAN" && !judul?.trim()) || !isi?.trim()) {
-      toast.warn("Lengkapi field yang diperlukan.");
+    if ((feedbackType === "SARAN" && !judul?.trim()) || !isi?.trim()) { // Validasi input
+      toast.warn("Lengkapi field yang diperlukan."); // Tampilkan warning toast
       return;
     }
+
+    // Siapkan payload untuk API
     const payload = {
-      jenis: feedbackType,
-      judul: feedbackType === "SARAN" ? judul.trim() : null,
-      isi: isi.trim(),
+      type: feedbackType,
+      title: feedbackType === "SARAN" ? judul.trim() : null,
+      content: isi.trim(),
       anonim: !!anonim,
-      theme: feedbackType === "UCAPAN" ? theme : null,
+      themeColor: feedbackType === "UCAPAN" ? theme : null,
       userId: userId ?? null,
     };
+
     try {
-      setSubmitting(true);
-      const res = await fetch(BASE_URL, {
+      setSubmitting(true); // Set submitting true
+      const res = await fetch(BASE_URL, { // Kirim POST request ke API
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const txt = await res.text();
-        console.error("Submit failed:", res.status, txt);
-        toast.error("Gagal mengirim feedback.");
-        setSubmitting(false);
+
+      if (!res.ok) { // Jika response tidak ok
+        const txt = await res.text(); // Ambil response text
+        console.error("Submit failed:", res.status, txt); // Log error
+        toast.error("Gagal mengirim feedback."); // Tampilkan error toast
+        setSubmitting(false); // Set submitting false
         return;
       }
-      toast.success("Terima kasih! Feedback terkirim 🎉");
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 1800);
-      const newCount = submitCount + 1;
-      setSubmitCount(newCount);
-      localStorage.setItem("gt_submit_count", String(newCount));
+
+      toast.success("Terima kasih! Feedback terkirim 🎉"); // Tampilkan success toast
+      setShowConfetti(true); // Tampilkan confetti
+      setTimeout(() => setShowConfetti(false), 3000); // Sembunyikan confetti setelah 3 detik
+
+      const newCount = submitCount + 1; // Tingkatkan submit count
+      setSubmitCount(newCount); // Set state submit count
+      localStorage.setItem("gt_submit_count", String(newCount)); // Simpan ke localStorage
+
+      // Reset form
       setJudul("");
       setIsi("");
       setAnonim(false);
-      setTheme("yellow");
+      setTheme("maroon");
       setFeedbackType("SARAN");
-      fetchFeedback();
-    } catch (err) {
-      console.error("Submit error:", err);
-      toast.error("Terjadi kesalahan saat mengirim feedback.");
+
+      fetchFeedback(); // Refresh data feedback
+    } catch (err) { // Tangani error
+      console.error("Submit error:", err); // Log error
+      toast.error("Terjadi kesalahan saat mengirim feedback."); // Tampilkan error toast
     } finally {
-      setSubmitting(false);
+      setSubmitting(false); // Set submitting false
     }
   };
 
-  const avatarFor = (seed) => {
-    const s = encodeURIComponent(seed || "anon");
-    return `https://api.dicebear.com/8.x/thumbs/svg?seed=${s}`;
+  // Fungsi untuk handle like feedback
+  const handleLike = async (id) => {
+    try {
+      const res = await fetch(`${BASE_URL}/${id}/like`, { // Kirim POST request untuk like
+        method: "POST",
+      });
+      
+      if (res.ok) { // Jika response ok
+        fetchFeedback(); // Refresh data feedback
+        toast.success("Feedback disukai!"); // Tampilkan success toast
+      }
+    } catch (err) { // Tangani error
+      console.error("Error liking feedback:", err); // Log error
+    }
   };
 
-  // Typewriter text for header
-  const Typewriter = ({ text, speed = 60 }) => {
-    const [index, setIndex] = useState(0);
-    useEffect(() => {
-      setIndex(0);
-      const id = setInterval(() => {
-        setIndex((i) => {
-          if (i >= text.length) {
-            clearInterval(id);
-            return text.length;
-          }
-          return i + 1;
-        });
-      }, speed);
-      return () => clearInterval(id);
-    }, [text, speed]);
-    return <span>{text.slice(0, index)}</span>;
+  // Fungsi untuk generate avatar dari nama
+  const avatarFor = (name) => {
+    if (!name) return "❓"; // Kembalikan "?" jika nama tidak ada
+    return name.charAt(0).toUpperCase(); // Kembalikan huruf pertama kapital
   };
 
-  // random emoji for card display
-  const randomEmoji = (seed) => {
-    if (!seed) return EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-    let h = 0;
-    for (let i = 0; i < seed.length; i++) h = (h << 5) - h + seed.charCodeAt(i);
-    return EMOJIS[Math.abs(h) % EMOJIS.length];
-  };
+  // Data untuk pie chart (menggunakan useMemo untuk optimisasi)
+  const pieData = useMemo(() => {
+    return [
+      { name: "Ucapan", value: ucapanList.length },
+      { name: "Saran", value: saranList.length },
+    ];
+  }, [ucapanList, saranList]);
 
-  // timeline component for saran
-  const Timeline = ({ items = [] }) => {
-    return (
-      <div className="relative pl-6">
-        <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gray-200" />
-        <ul className="space-y-6">
-          {items.map((it) => (
-            <li key={it.id} className="relative">
-              <div className="absolute -left-4 top-0 w-8 h-8 rounded-full flex items-center justify-center bg-white shadow">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-red-500">
-                  <circle cx="12" cy="12" r="9" stroke="#f87171" strokeWidth="1.5" />
-                  <path d="M8 12l2 2 4-4" stroke="#f87171" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div className="ml-6 bg-white p-4 rounded-lg shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="font-semibold">{it.judul || "Saran"}</div>
-                    <div className="text-sm text-gray-600">{it.isi}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500">{it.anonim ? "Anonim" : it.nama || "User"}</div>
-                    <div className="mt-2">
-                      <span className={`inline-block px-2 py-1 text-xs rounded ${it.status === "Diterima" ? "bg-green-100 text-green-700" : it.status === "Diproses" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-700"} animate-pulse`}>{it.status}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-400">{it.createdAt ? new Date(it.createdAt).toLocaleString() : ""}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  };
+  // Data untuk bar chart (menggunakan useMemo untuk optimisasi)
+  const barData = useMemo(() => {
+    return [
+      { name: "Total", total: allFeedback.length },
+      { name: "Ucapan", total: ucapanList.length },
+      { name: "Saran", total: saranList.length },
+    ];
+  }, [allFeedback, ucapanList, saranList]);
 
-  // marquee content (running ucapan texts)
-  const marqueeText = ucapanList.map((u) => `${u.anonim ? "Anonim" : u.nama}: ${u.isi}`).join("  •  ");
-
-  // small hook to create floating emoji components positions
-  const FloatingEmojis = () => {
-    const decorations = Array.from({ length: 8 }).map((_, i) => ({
-      id: i,
-      emoji: EMOJIS[i % EMOJIS.length],
-      left: `${10 + (i * 11) % 80}%`,
-      delay: `${(i * 0.5) % 2}s`,
-      size: 18 + (i % 4) * 6,
-    }));
-    return (
-      <>
-        {decorations.map((d) => (
-          <div key={d.id} style={{ left: d.left, animationDelay: d.delay }} className="absolute top-10 animate-float pointer-events-none" aria-hidden>
-            <div style={{ fontSize: d.size }} className="opacity-80">{d.emoji}</div>
-          </div>
-        ))}
-      </>
-    );
-  };
-
-  // references for confetti sizing
-  const containerRef = useRef(null);
+  // Data untuk trend chart (simulasi data mingguan)
+  const feedbackTrendData = useMemo(() => {
+    // Simulasi data tren (dalam implementasi nyata, ini akan dihitung dari createdAt)
+    return [
+      { name: "Senin", ucapan: Math.floor(Math.random() * 10), saran: Math.floor(Math.random() * 10) },
+      { name: "Selasa", ucapan: Math.floor(Math.random() * 10), saran: Math.floor(Math.random() * 10) },
+      { name: "Rabu", ucapan: Math.floor(Math.random() * 10), saran: Math.floor(Math.random() * 10) },
+      { name: "Kamis", ucapan: Math.floor(Math.random() * 10), saran: Math.floor(Math.random() * 10) },
+      { name: "Jumat", ucapan: Math.floor(Math.random() * 10), saran: Math.floor(Math.random() * 10) },
+      { name: "Sabtu", ucapan: Math.floor(Math.random() * 10), saran: Math.floor(Math.random() * 10) },
+      { name: "Minggu", ucapan: Math.floor(Math.random() * 10), saran: Math.floor(Math.random() * 10) },
+    ];
+  }, [allFeedback]);
 
   return (
-    <div ref={containerRef} className="min-h-screen relative overflow-x-hidden">
-      {/* Inline CSS for animations (so we don't need tailwind.config changes) */}
-      <style>{`
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .bg-animated {
-          background: linear-gradient(90deg, #fff1f0 0%, #fff7ed 25%, #fff1f0 50%, #fff7f0 75%, #fff1f0 100%);
-          background-size: 200% 200%;
-          animation: gradientShift 10s ease infinite;
-        }
-        @keyframes floaty { 0% { transform: translateY(0); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0); } }
-        .animate-float { animation: floaty 4s ease-in-out infinite; }
-        @keyframes shake { 0% { transform: translateX(0) } 25% { transform: translateX(-4px) } 50% { transform: translateX(4px) } 75% { transform: translateX(-2px) } 100% { transform: translateX(0) } }
-        .hover-shake:hover { animation: shake 0.5s; }
-        .flip-card { perspective: 1000px; }
-        .flip-card-inner { transition: transform 0.6s; transform-style: preserve-3d; }
-        .flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
-        .flip-front, .flip-back { backface-visibility: hidden; transform-style: preserve-3d; }
-        .flip-back { transform: rotateY(180deg); position: absolute; top:0; left:0; width:100%; height:100%; }
-        .typewriter { border-right: 2px solid rgba(255,255,255,0.6); padding-right:6px; }
-        .marquee { white-space: nowrap; display:block; overflow:hidden; }
-        .marquee > span { display:inline-block; padding-left:100%; animation: marquee 18s linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-      `}</style>
+    <div className="min-h-screen bg-gradient-to-b from-[#f8f0f0] to-[#f5e1e1] p-6 space-y-8"> {/* Container utama dengan gradient background */}
+      <ToastContainer position="top-right" autoClose={3000} /> {/* Container untuk toast notifikasi */}
+      {showConfetti && <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={200} />} {/* Tampilkan confetti jika showConfetti true */}
 
-      {/* animated gradient background (subtle) */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-pink-50 via-yellow-50 to-white opacity-90 bg-animated" />
+      {/* Header */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20"> {/* Container header */}
+        <div className="flex items-center justify-between"> {/* Flex container untuk judul dan XP */}
+          <div>
+            <h1 className="text-3xl font-bold text-[#800020] flex items-center gap-2"> {/* Judul halaman */}
+              <Trophy className="text-amber-500" /> Achievement & Feedback Center
+            </h1>
+            <p className="text-gray-600 mt-2"> {/* Teks sapaan */}
+              Halo <span className="font-semibold text-[#800020]">{username}</span>, 
+              semua feedback dan saran yang terkirim dari semua siswa <span className="font-bold text-[#800020]">{submitCount}</span> feedback! 🎉
+            </p>
+          </div>
+          <div className="bg-[#800020] text-white px-4 py-2 rounded-full flex items-center gap-2"> {/* Badge XP */}
+            <Star size={18} />
+            <span className="font-bold">{submitCount} XP</span>
+          </div>
+        </div>
+      </div>
 
-      {/* floating emojis */}
-      <FloatingEmojis />
+      {/* Navigation Tabs */}
+      <div className="bg-white rounded-2xl shadow-lg p-2 flex border border-[#800020] border-opacity-20"> {/* Container tab navigasi */}
+        <button 
+          className={`flex-1 py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 ${activeTab === "feedback" ? "bg-[#800020] text-white" : "text-gray-600"}`} // Tombol Feedback
+          onClick={() => setActiveTab("feedback")} // Set activeTab ke "feedback" saat diklik
+        >
+          <MessageSquare size={18} /> Feedback
+        </button>
+        <button 
+          className={`flex-1 py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 ${activeTab === "achievements" ? "bg-[#800020] text-white" : "text-gray-600"}`} // Tombol Achievements
+          onClick={() => setActiveTab("achievements")} // Set activeTab ke "achievements" saat diklik
+        >
+          <Award size={18} /> Achievements
+        </button>
+        <button 
+          className={`flex-1 py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 ${activeTab === "stats" ? "bg-[#800020] text-white" : "text-gray-600"}`} // Tombol Statistics
+          onClick={() => setActiveTab("stats")} // Set activeTab ke "stats" saat diklik
+        >
+          <BarChart3 size={18} /> Statistics
+        </button>
+      </div>
 
-      <ToastContainer position="top-right" />
+      {activeTab === "feedback" && ( // Tampilkan jika tab aktif adalah "feedback"
+        <>
+          {/* Form Feedback */}
+          <motion.div 
+            initial="hidden" // State awal animasi
+            animate="visible" // State animasi saat visible
+            variants={cardVariants} // Variants animasi
+            className="bg-white rounded-2xl shadow-lg p-6 space-y-6 border border-[#800020] border-opacity-20" // Container form
+          >
+            <h2 className="text-xl font-bold text-[#800020] flex items-center gap-2"> {/* Judul form */}
+              <Zap size={20} /> Berikan Feedback Baru
+            </h2>
+            
+            <div className="flex gap-4"> {/* Container tombol jenis feedback */}
+              <button
+                onClick={() => setFeedbackType("SARAN")} // Set feedbackType ke "SARAN"
+                className={`px-4 py-3 rounded-xl font-medium flex items-center gap-2 transition-all ${
+                  feedbackType === "SARAN" // Kondisi kelas aktif
+                    ? "bg-[#800020] text-white shadow"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                <MessageSquare size={16} /> + Saran
+              </button>
+              <button
+                onClick={() => setFeedbackType("UCAPAN")} // Set feedbackType ke "UCAPAN"
+                className={`px-4 py-3 rounded-xl font-medium flex items-center gap-2 transition-all ${
+                  feedbackType === "UCAPAN" // Kondisi kelas aktif
+                    ? "bg-[#DC143C] text-white shadow"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                <Heart size={16} /> + Ucapan
+              </button>
+            </div>
 
-      {showConfetti && containerRef.current && (
-        <Confetti numberOfPieces={220} recycle={false} width={containerRef.current.clientWidth} height={containerRef.current.clientHeight} />
+            {feedbackType === "SARAN" && ( // Tampilkan input judul jika feedbackType adalah "SARAN"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Label untuk input judul</label>
+                <input
+                  type="text"
+                  value={judul}
+                  onChange={(e) => setJudul(e.target.value)} // Update state judul
+                  placeholder="Masukkan judul saran Anda"
+                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#800020] focus:border-transparent" // Styling input
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1"> {/* Label untuk textarea */}
+                {feedbackType === "SARAN" ? "Isi Saran" : "Isi Ucapan"}
+              </label>
+              <textarea
+                value={isi}
+                onChange={(e) => setIsi(e.target.value)} // Update state isi
+                placeholder={
+                  feedbackType === "SARAN" // Placeholder berdasarkan jenis feedback
+                    ? "Tulis saran Anda di sini..."
+                    : "Tulis ucapan dan apresiasi Anda di sini..."
+                }
+                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-[#800020] focus:border-transparent" // Styling textarea
+                rows={4}
+              />
+            </div>
+
+            {feedbackType === "UCAPAN" && ( // Tampilkan pilihan tema jika feedbackType adalah "UCAPAN"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Label untuk pilihan tema</label>
+                <div className="flex gap-2 flex-wrap"> {/* Container tombol tema */}
+                  {Object.keys(THEME_CLASSES).map((c) => ( // Map setiap tema
+                    <button
+                      key={c}
+                      onClick={() => setTheme(c)} // Set tema saat diklik
+                      className={`px-4 py-2 rounded-xl font-medium capitalize transition-all ${
+                        theme === c  // Kondisi kelas aktif
+                          ? "bg-[#800020] text-white shadow" 
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {c} {/* Nama tema */}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"> {/* Label untuk checkbox anonim */}
+              <input
+                type="checkbox"
+                checked={anonim}
+                onChange={() => setAnonim(!anonim)} // Toggle state anonim
+                className="rounded text-[#800020] focus:ring-[#800020]" // Styling checkbox
+              />
+              <span className="text-gray-700">Kirim sebagai anonim</span>
+            </label>
+
+            <button
+              onClick={handleSubmit} // Panggil handleSubmit saat diklik
+              disabled={submitting} // Nonaktifkan tombol saat submitting
+              className="w-full py-3 bg-gradient-to-r from-[#800020] to-[#DC143C] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-70" // Styling tombol
+            >
+              {submitting ? ( // Tampilkan loading indicator jika submitting
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> {/* Spinner */}
+                  Mengirim...
+                </>
+              ) : (
+                <>
+                  <Zap size={18} /> Kirim Feedback
+                </>
+              )}
+            </button>
+          </motion.div>
+
+          {/* Feedback Lists */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Grid container untuk list feedback */}
+            {/* Ucapan List */}
+            <motion.div 
+              initial="hidden" // State awal animasi
+              animate="visible" // State animasi saat visible
+              variants={cardVariants} // Variants animasi
+              className="bg-gradient-to-br from-[#800020] to-[#a53860] rounded-2xl shadow-lg p-6 border border-white border-opacity-20" // Container list ucapan
+            >
+              <div className="flex items-center justify-between mb-4"> {/* Header list ucapan */}
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Heart size={18} /> Ucapan Terbaru
+                </h3>
+                <span className="bg-white bg-opacity-20 text-white px-3 py-1 rounded-full text-sm font-medium"> {/* Badge jumlah ucapan */}
+                  {ucapanList.length} ucapan
+                </span>
+              </div>
+              
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2"> {/* Container item ucapan dengan scroll */}
+                {ucapanList.length === 0 ? ( // Tampilkan jika tidak ada ucapan
+                  <div className="text-center py-8 text-white">
+                    <Heart size={40} className="mx-auto mb-2 opacity-80" />
+                    <p className="font-semibold">Belum ada ucapan</p>
+                  </div>
+                ) : (
+                  ucapanList.map((f) => ( // Map setiap ucapan
+                    <motion.div 
+                      key={f.id}
+                      initial={{ opacity: 0, y: 10 }} // Animasi awal
+                      animate={{ opacity: 1, y: 0 }} // Animasi saat visible
+                      transition={{ duration: 0.3 }} // Durasi animasi
+                      className="p-4 bg-white bg-opacity-90 rounded-xl border-l-4 border-[#800020]" // Styling item ucapan
+                    >
+                      <p className="text-gray-800">{f.isi}</p> {/* Isi ucapan */}
+                      <div className="flex items-center justify-between mt-3"> {/* Footer item (avatar dan like) */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-[#800020] bg-opacity-20 flex items-center justify-center text-[#800020] font-bold"> {/* Avatar */}
+                            {f.anonim ? "?" : avatarFor(f.nama)} {/* Tampilkan "?" jika anonim */}
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {f.anonim ? "Anonim" : f.nama || "Siswa"} {/* Nama atau "Anonim" */}
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => handleLike(f.id)} // Panggil handleLike saat diklik
+                          className="flex items-center gap-1 text-gray-500 hover:text-[#800020] transition-colors" // Styling tombol like
+                        >
+                          <ThumbsUp size={14} />
+                          <span className="text-xs">{f.likes || 0}</span> {/* Jumlah like */}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+            {/* Saran List */}
+            <motion.div 
+              initial="hidden" // State awal animasi
+              animate="visible" // State animasi saat visible
+              variants={cardVariants} // Variants animasi
+              transition={{ delay: 0.1 }} // Delay animasi
+              className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20" // Container list saran
+            >
+              <div className="flex items-center justify-between mb-4"> {/* Header list saran */}
+                <h3 className="text-lg font-bold text-[#800020] flex items-center gap-2">
+                  <MessageSquare size={18} /> Saran Terbaru
+                </h3>
+                <span className="bg-[#800020] bg-opacity-10 text-[#800020] px-3 py-1 rounded-full text-sm font-medium"> {/* Badge jumlah saran */}
+                  {saranList.length} saran
+                </span>
+              </div>
+              
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2"> {/* Container item saran dengan scroll */}
+                {saranList.length === 0 ? ( // Tampilkan jika tidak ada saran
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageSquare size={40} className="mx-auto mb-2 opacity-50" />
+                    <p>Belum ada saran</p>
+                  </div>
+                ) : (
+                  saranList.map((f) => ( // Map setiap saran
+                    <motion.div 
+                      key={f.id}
+                      initial={{ opacity: 0, y: 10 }} // Animasi awal
+                      animate={{ opacity: 1, y: 0 }} // Animasi saat visible
+                      transition={{ duration: 0.3, delay: 0.1 }} // Durasi dan delay animasi
+                      className="p-4 bg-gray-50 rounded-xl border border-gray-200" // Styling item saran
+                    >
+                      <h4 className="font-semibold text-[#800020]">{f.judul}</h4> {/* Judul saran */}
+                      <p className="text-gray-700 mt-2">{f.isi}</p> {/* Isi saran */}
+                      <div className="flex items-center justify-between mt-3"> {/* Footer item (avatar dan like) */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-[#800020] bg-opacity-20 flex items-center justify-center text-[#800020] font-bold"> {/* Avatar */}
+                            {f.anonim ? "?" : avatarFor(f.nama)} {/* Tampilkan "?" jika anonim */}
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {f.anonim ? "Anonim" : f.nama || "Siswa"} {/* Nama atau "Anonim" */}
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => handleLike(f.id)} // Panggil handleLike saat diklik
+                          className="flex items-center gap-1 text-gray-500 hover:text-[#800020] transition-colors" // Styling tombol like
+                        >
+                          <ThumbsUp size={14} />
+                          <span className="text-xs">{f.likes || 0}</span> {/* Jumlah like */}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </>
       )}
 
-      {/* HERO with typewriter */}
-<header className="max-w-8xl mx-auto p-5 pb-15 relative z-10 mt-20">
-  <div className="rounded-xl p-6 bg-gradient-to-r from-red-700 to-yellow-500 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center gap-4">
-    <div className="flex-1">
-      <h1 className="text-2xl font-extrabold flex items-center gap-3">
-        <span className="text-3xl">🌟</span>
-        <span className="typewriter">
-          <Typewriter text={"Feedback & Wall of Appreciation — Kirim ucapan / saran untuk guru"} speed={35} />
-        </span>
-      </h1>
-      <p className="mt-5 text-sm text-white/90 max-w-xl">
-        Kirim ucapan atau saran — lihat leaderboard, charts, dan kartu ucapan animatif. Halaman penuh interaksi!
-      </p>
-    </div>
-
-    <div className="text-right">
-      <div className="text-sm opacity-90">Signed in as</div>
-      <div className="mt-1 font-semibold">{username}</div>
-      <div className="mt-2 text-xs">
-        Submissions: {submitCount} {submitCount >= 5 && <span className="ml-2 px-2 py-1 rounded bg-white/20 text-xs">🏅 Contributor</span>}
-      </div>
-    </div>
-  </div>
-
-  {/* marquee running text underneath */}
-  <div className="mt-6 rounded-md bg-white/30 backdrop-blur-sm p-2">
-    <div className="marquee text-sm text-black">
-      <span>{marqueeText || "Hallo semua, kenalin saya admin pacar Jungkook nih! ✨"}</span>
-    </div>
-  </div>
-</header>
-
-      <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 z-10 relative">
-        {/* LEFT: Form + charts */}
-        <section className="lg:col-span-2 space-y-6">
-          {/* Form card */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`p-6 rounded-xl shadow ${feedbackType === "SARAN" ? "bg-red-50" : "bg-yellow-50"}`}
-          >
-            <div className="flex gap-3 items-center mb-4">
-              <button
-                onClick={() => setFeedbackType("SARAN")}
-                className={`px-3 py-2 rounded ${feedbackType === "SARAN" ? "bg-red-600 text-white" : "bg-white/80"}`}
+      {activeTab === "achievements" && ( // Tampilkan jika tab aktif adalah "achievements"
+        <motion.div 
+          initial="hidden" // State awal animasi
+          animate="visible" // State animasi saat visible
+          variants={cardVariants} // Variants animasi
+          className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20" // Container achievements
+        >
+          <h2 className="text-xl font-bold text-[#800020] mb-6 flex items-center gap-2"> {/* Judul achievements */}
+            <Award className="text-amber-500" /> Pencapaian Anda
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Grid container untuk achievement items */}
+            {achievements.map((achievement) => ( // Map setiap achievement
+              <div 
+                key={achievement.id} 
+                className={`p-4 rounded-xl border-2 flex flex-col items-center text-center transition-all ${
+                  achievement.earned  // Kondisi kelas jika earned
+                    ? "bg-amber-50 border-amber-300 shadow" 
+                    : "bg-gray-100 border-gray-200 opacity-70"
+                }`}
               >
-                SARAN
-              </button>
-              <button
-                onClick={() => setFeedbackType("UCAPAN")}
-                className={`px-3 py-2 rounded ${feedbackType === "UCAPAN" ? "bg-red-600 text-white" : "bg-white/80"}`}
-              >
-                UCAPAN
-              </button>
-              <div className="ml-auto text-sm text-gray-600">Pilih tipe untuk ubah style form</div>
-            </div>
+                <div className={`text-3xl mb-2 ${achievement.earned ? "text-amber-500" : "text-gray-400"}`}> {/* Icon achievement */}
+                  {achievement.icon}
+                </div>
+                <h3 className={`font-bold mb-1 ${achievement.earned ? "text-[#800020]" : "text-gray-500"}`}> {/* Nama achievement */}
+                  {achievement.name}
+                </h3>
+                <p className="text-sm text-gray-600 mb-2">{achievement.description}</p> {/* Deskripsi achievement */}
+                <div className={`text-xs px-2 py-1 rounded-full ${achievement.earned ? "bg-amber-100 text-amber-700" : "bg-gray-200 text-gray-500"}`}> {/* Status achievement */}
+                  {achievement.earned ? "Tercapai" : "Dalam progres"}
+                </div>
+              </div>
+            ))}
+          </div>
 
-            <AnimatePresence mode="wait">
-              {feedbackType === "SARAN" ? (
-                <motion.div key="saran" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
-                  <input placeholder="Judul" className="w-full border rounded p-2 mb-3" value={judul} onChange={(e) => setJudul(e.target.value)} />
-                  <textarea placeholder="Tulis saran..." className="w-full border rounded p-2 h-28 mb-2" value={isi} onChange={(e) => setIsi(e.target.value)} />
-                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonim} onChange={() => setAnonim((s) => !s)} /> Kirim sebagai anonim</label>
-                </motion.div>
-              ) : (
-                <motion.div key="ucapan" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.25 }}>
-                  <textarea placeholder="Tulis ucapan..." className="w-full border rounded p-2 h-28 mb-2" value={isi} onChange={(e) => setIsi(e.target.value)} />
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="text-sm text-gray-600">Pilih tema:</div>
-                    {Object.keys(THEME_CLASSES).concat("red","purple").slice(0,6).map((t) => (
-                      <button key={t} onClick={() => setTheme(t)} className={`w-8 h-8 rounded-full border ${THEME_CLASSES[t] ?? "bg-red-50 border-red-200"} ${theme === t ? "ring-2 ring-red-500" : ""}`} />
-                    ))}
-                  </div>
-
-                  {/* animated preview card */}
-                  <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 3 }} className={`p-4 rounded ${THEME_CLASSES[theme] ?? "bg-yellow-50"} border`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center">{randomEmoji(isi || username)}</div>
-                      <div className="flex-1 italic text-gray-700">{isi || "Preview ucapan..."}</div>
-                      <div className="text-xs text-gray-500">{anonim ? "Anonim" : username}</div>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="flex items-center gap-3 mt-4">
-              <button onClick={handleSubmit} disabled={submitting} className="px-4 py-2 bg-red-700 text-white rounded shadow hover:bg-red-800 disabled:opacity-60">
-                {submitting ? "Mengirim..." : "Kirim Feedback"}
-              </button>
-              <button onClick={() => { setJudul(""); setIsi(""); setAnonim(false); setTheme("yellow"); }} className="px-3 py-2 border rounded">Reset</button>
-              <div className="ml-auto text-sm text-gray-500">Last update: {loading ? "loading..." : new Date().toLocaleTimeString()}</div>
+          <div className="mt-8 p-4 bg-gradient-to-r from-[#800020] to-[#DC143C] rounded-xl text-white"> {/* Container progress level */}
+            <h3 className="font-bold mb-2 flex items-center gap-2"> {/* Judul progress */}
+              <TrendingUp size={18} /> Tingkatkan Level Anda!
+            </h3>
+            <p className="text-sm"> {/* Teks motivasi */}
+              Terus berikan feedback yang konstruktif untuk membuka achievement lainnya dan meningkatkan level kontribusi Anda.
+            </p>
+            <div className="mt-3 bg-white bg-opacity-20 rounded-full h-2"> {/* Container progress bar */}
+              <div 
+                className="bg-amber-300 h-2 rounded-full"  // Progress bar
+                style={{ width: `${Math.min(100, (submitCount / 20) * 100)}%` }} // Lebar progress berdasarkan submitCount
+              ></div>
             </div>
-          </motion.div>
+            <div className="flex justify-between text-xs mt-1"> {/* Label level */}
+              <span>Level 1</span>
+              <span>{submitCount}/20</span> {/* Progress text */}
+              <span>Level 2</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
-          {/* charts & summaries */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-xl shadow">
-              <div className="text-sm text-gray-500">Total Feedback</div>
-              <div className="text-2xl font-bold">{stats.totals}</div>
-              <div className="text-xs text-gray-500 mt-1">Ucapan: {stats.ucapan} • Saran: {stats.saran}</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow">
-              <div className="text-sm text-gray-500">Top Authors</div>
-              <ol className="mt-2 space-y-1 text-sm">
-                {stats.authorLeaderboard.map((a) => (
-                  <li key={a.name} className="flex items-center gap-3">
-                    <img src={avatarFor(a.name)} alt="" className="w-8 h-8 rounded-full" />
-                    <div className="flex-1">{a.name}</div>
-                    <div className="font-semibold text-sm">{a.count}</div>
-                  </li>
-                ))}
-                {stats.authorLeaderboard.length === 0 && <li className="text-gray-400">Belum ada data</li>}
-              </ol>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow">
-              <div className="text-sm text-gray-500">Leaderboard Guru (mentions)</div>
-              <ol className="mt-2 text-sm space-y-1">
-                {stats.guruLeaderboard.map((g) => (
-                  <li key={g.nama} className="flex justify-between">
-                    <div className="truncate max-w-xs">{g.nama}</div>
-                    <div className="font-semibold">{g.count}</div>
-                  </li>
-                ))}
-                {stats.guruLeaderboard.length === 0 && <div className="text-gray-400">No mentions</div>}
-              </ol>
-            </div>
-          </motion.div>
+      {activeTab === "stats" && ( // Tampilkan jika tab aktif adalah "stats"
+        <div className="space-y-6"> {/* Container statistics */}
+          {/* Stat Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6"> {/* Grid container untuk stat cards */}
+            <motion.div 
+              initial="hidden" // State awal animasi
+              animate="visible" // State animasi saat visible
+              variants={cardVariants} // Variants animasi
+              className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20 flex items-center" // Stat card: Total Feedback
+            >
+              <div className="rounded-full bg-[#800020] bg-opacity-10 p-3 mr-4"> {/* Icon */}
+                <MessageSquare className="text-[#800020]" size={24} />
+              </div>
+              <div>
+                <h3 className="text-sm text-gray-500">Total Feedback</h3> {/* Label */}
+                <p className="text-2xl font-bold text-[#800020]">{stats.totalFeedback}</p> {/* Value */}
+              </div>
+            </motion.div>
 
-          {/* charts row */}
-          <motion.div className="grid md:grid-cols-2 gap-4" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="bg-white p-4 rounded-xl shadow">
-              <div className="text-sm font-semibold mb-2">Tipe Feedback</div>
-              <div style={{ width: "100%", height: 220 }}>
-                <ResponsiveContainer>
+            <motion.div 
+              initial="hidden" // State awal animasi
+              animate="visible" // State animasi saat visible
+              variants={cardVariants} // Variants animasi
+              transition={{ delay: 0.1 }} // Delay animasi
+              className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20 flex items-center" // Stat card: Total Ucapan
+            >
+              <div className="rounded-full bg-[#DC143C] bg-opacity-10 p-3 mr-4"> {/* Icon */}
+                <Heart className="text-[#DC143C]" size={24} />
+              </div>
+              <div>
+                <h3 className="text-sm text-gray-500">Total Ucapan</h3> {/* Label */}
+                <p className="text-2xl font-bold text-[#800020]">{stats.totalUcapan}</p> {/* Value */}
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial="hidden" // State awal animasi
+              animate="visible" // State animasi saat visible
+              variants={cardVariants} // Variants animasi
+              transition={{ delay: 0.2 }} // Delay animasi
+              className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20 flex items-center" // Stat card: Total Saran
+            >
+              <div className="rounded-full bg-[#B22222] bg-opacity-10 p-3 mr-4"> {/* Icon */}
+                <BookOpen className="text-[#B22222]" size={24} />
+              </div>
+              <div>
+                <h3 className="text-sm text-gray-500">Total Saran</h3> {/* Label */}
+                <p className="text-2xl font-bold text-[#800020]">{stats.totalSaran}</p> {/* Value */}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div 
+              initial="hidden"
+              animate="visible"
+              variants={cardVariants}
+              className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20"
+            >
+              <h3 className="text-lg font-bold text-[#800020] mb-4 flex items-center gap-2">
+                <PieChart size={18} /> Distribusi Feedback
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={stats.pie} dataKey="value" nameKey="name" innerRadius={40} outerRadius={80} label>
-                      {stats.pie.map((entry, idx) => <Cell key={`c-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />)}
+                    <Pie 
+                      data={pieData} 
+                      dataKey="value" 
+                      nameKey="name" 
+                      outerRadius={80} 
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
                     </Pie>
                     <Tooltip />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white p-4 rounded-xl shadow">
-              <div className="text-sm font-semibold mb-2">Recent Likes (top 6)</div>
-              <div style={{ width: "100%", height: 220 }}>
-                <ResponsiveContainer>
-                  <BarChart data={allFeedback.slice().sort((a,b)=> (b.likes||0)-(a.likes||0)).slice(0,6).map(x=>({ name: (x.nama||"Anonim").slice(0,12), likes: x.likes||0 }))}>
+            <motion.div 
+              initial="hidden"
+              animate="visible"
+              variants={cardVariants}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20"
+            >
+              <h3 className="text-lg font-bold text-[#800020] mb-4 flex items-center gap-2">
+                <BarChart3 size={18} /> Perbandingan Feedback
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barData}>
                     <XAxis dataKey="name" />
-                    <YAxis />
+                    <YAxis allowDecimals={false} />
                     <Tooltip />
-                    <Bar dataKey="likes" fill="#f77f00" />
+                    <Legend />
+                    <Bar dataKey="total" fill="#800020" name="Jumlah Feedback" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* RIGHT: filters, preview, gamification + timeline */}
-        <aside className="space-y-6">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded-xl shadow">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold">Wall Filters</div>
-              <button onClick={() => fetchFeedback()} className="text-sm text-blue-600 hover:underline">Refresh</button>
-            </div>
-            <div className="mt-3 text-sm text-gray-600">Menampilkan {ucapanList.length} ucapan • {saranList.length} saran</div>
-            <div className="mt-3 flex gap-2">
-              <button onClick={() => { setUcapanList(allFeedback.filter(f=>f.jenis==="UCAPAN")); setSaranList(allFeedback.filter(f=>f.jenis==="SARAN")); }} className="px-2 py-1 rounded bg-gray-100 text-sm">All</button>
-              <button onClick={() => setUcapanList(allFeedback.filter(f=>f.jenis==="UCAPAN"))} className="px-2 py-1 rounded bg-yellow-100 text-sm">Ucapan</button>
-              <button onClick={() => setUcapanList([])} className="px-2 py-1 rounded bg-gray-100 text-sm">Clear</button>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded-xl shadow">
-            <div className="font-semibold mb-3">Wall Preview</div>
-            <div className="space-y-3">
-              {ucapanList.slice(0,3).map((u) => (
-                <div key={u.id} className="flex gap-3 items-start">
-                  <img src={avatarFor(u.nama || u.id)} alt="" className="w-10 h-10 rounded-full" />
-                  <div className="flex-1">
-                    <div className="text-sm italic text-gray-700 truncate">"{u.isi}"</div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center justify-between">
-                      <span>{u.anonim ? "Anonim" : (u.nama || "User")}</span>
-                      <button onClick={() => setSelectedCard(u)} className="text-xs text-blue-600">Lihat</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {ucapanList.length === 0 && <div className="text-sm text-gray-400">Belum ada ucapan</div>}
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded-xl shadow text-center">
-            <div className="text-sm text-gray-500">Kontribusi Kamu</div>
-            <div className="text-2xl font-bold mt-2">{submitCount}</div>
-            <div className="mt-3">
-              {submitCount >= 10 ? <div className="inline-block px-3 py-1 rounded bg-yellow-300">🏆 Master Contributor</div> :
-                submitCount >=5 ? <div className="inline-block px-3 py-1 rounded bg-yellow-200">🏅 Contributor</div> :
-                <div className="inline-block px-3 py-1 rounded bg-gray-100">🤝 Mulai Berkontribusi</div>
-              }
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded-xl shadow">
-            <div className="font-semibold mb-3">Timeline Saran</div>
-            <Timeline items={saranList.slice(0,6)} />
-          </motion.div>
-        </aside>
-      </main>
-
-      {/* WALL (masonry) - cards with flip */}
-      <section className="max-w-6xl mx-auto p-6 mt-6 z-10 relative">
-        <h2 className="text-xl font-semibold mb-4">All Ucapan</h2>
-        {loading ? (
-          <div className="p-6 text-center">Loading...</div>
-        ) : (
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-            {ucapanList.length === 0 && <div className="bg-white p-6 rounded shadow text-center text-gray-500">Belum ada ucapan, jadilah yang pertama ✨</div>}
-            {ucapanList.map((u) => (
-              <motion.article
-                key={u.id}
-                className={`break-inside-avoid mb-4 relative flip-card ${THEME_CLASSES[u.theme] ?? THEME_CLASSES.yellow} border p-4 rounded-lg`}
-                whileHover={{ scale: 1.02 }}
-                onClick={() => setSelectedCard(u)}
-              >
-                <div className="flip-card-inner relative">
-                  {/* front */}
-                  <div className="flip-front flex items-start gap-3">
-                    <img src={avatarFor(u.nama || u.id)} alt="" className="w-12 h-12 rounded-full" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-gray-800 truncate">{u.anonim ? "Anonim" : (u.nama || "User")}</div>
-                        <div className="text-xs text-gray-400">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ""}</div>
-                      </div>
-                      <p className="mt-2 text-gray-700 italic">"{u.isi.length > 200 ? u.isi.slice(0, 200) + "..." : u.isi}"</p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); handleLike(u.id); }} className="px-2 py-1 bg-white/90 rounded text-sm hover-shake">❤️ {u.likes || 0}</button>
-                        <div className="text-sm text-gray-500">{randomEmoji(u.isi || u.id)}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* back */}
-                  <div className="flip-back p-4 bg-white rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <img src={avatarFor(u.nama || u.id)} alt="" className="w-12 h-12 rounded-full" />
-                      <div className="flex-1">
-                        <div className="font-semibold">{u.judul || "Ucapan"}</div>
-                        <div className="text-xs text-gray-500">{u.anonim ? "Anonim" : (u.nama || "User")}</div>
-                        <p className="mt-3 text-gray-700">{u.isi}</p>
-                        <div className="mt-3 text-xs text-gray-400">{u.createdAt ? new Date(u.createdAt).toLocaleString() : ""}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Modal detail */}
-      <AnimatePresence>
-        {selectedCard && (
-          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div onClick={() => setSelectedCard(null)} className="absolute inset-0 bg-black/40" />
-            <motion.div initial={{ y: 30, scale: 0.98 }} animate={{ y: 0, scale: 1 }} exit={{ y: 30, scale: 0.98 }} className="relative z-10 w-full max-w-2xl bg-white rounded-xl p-6 shadow-2xl">
-              <div className="flex gap-4 items-start">
-                <img src={avatarFor(selectedCard.nama || selectedCard.id)} className="w-16 h-16 rounded-full" alt="" />
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-bold">{selectedCard.judul ?? (selectedCard.jenis === "UCAPAN" ? "Ucapan" : "Saran")}</h3>
-                      <div className="text-sm text-gray-500">{selectedCard.anonim ? "Anonim" : (selectedCard.nama || "User")}</div>
-                    </div>
-                    <div className="text-sm text-gray-500">{selectedCard.createdAt ? new Date(selectedCard.createdAt).toLocaleString() : ""}</div>
-                  </div>
-
-                  <p className="mt-4 text-gray-700">{selectedCard.isi}</p>
-
-                  <div className="mt-4 flex items-center gap-3">
-                    <button onClick={() => { handleLike(selectedCard.id); setSelectedCard((s)=> ({...s, likes: (s.likes||0)+1})); }} className="px-3 py-2 rounded bg-red-600 text-white">❤️ Like ({selectedCard.likes || 0})</button>
-                    <button onClick={() => { navigator.clipboard?.writeText(selectedCard.isi); toast.info("Teks disalin ke clipboard"); }} className="px-3 py-2 rounded border">Copy</button>
-                    <button onClick={() => { toast.info("Fitur export belum aktif"); }} className="px-3 py-2 rounded border">Export</button>
-                    <div className="ml-auto text-xs text-gray-500">{selectedCard.jenis}</div>
-                  </div>
-                </div>
-              </div>
-
-              <button onClick={() => setSelectedCard(null)} className="absolute top-3 right-3 text-gray-500">✖</button>
             </motion.div>
+          </div>
+
+          {/* Trend Chart */}
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20"
+          >
+            <h3 className="text-lg font-bold text-[#800020] mb-4 flex items-center gap-2">
+              <TrendingUp size={18} /> Tren Feedback Mingguan
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={feedbackTrendData}>
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="ucapan" fill="#DC143C" name="Ucapan" />
+                  <Bar dataKey="saran" fill="#800020" name="Saran" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+
+          {/* Top Contributors */}
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-2xl shadow-lg p-6 border border-[#800020] border-opacity-20"
+          >
+            <h3 className="text-lg font-bold text-[#800020] mb-4 flex items-center gap-2">
+              <Users size={18} /> Top Contributors
+            </h3>
+            <div className="space-y-3">
+              {stats.topContributors.length > 0 ? (
+                stats.topContributors.map((contributor, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#800020] bg-opacity-20 flex items-center justify-center text-[#800020] font-bold">
+                        {avatarFor(contributor)}
+                      </div>
+                      <span className="font-medium">{contributor}</span>
+                    </div>
+                    <span className="bg-[#800020] bg-opacity-10 text-[#800020] px-2 py-1 rounded-full text-xs">
+                      #{index + 1}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500 py-4">Belum ada data contributor</p>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

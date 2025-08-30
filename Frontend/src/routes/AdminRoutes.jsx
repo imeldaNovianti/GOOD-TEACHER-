@@ -9,6 +9,9 @@ import Kuisioner from "../pages/admin/Kuisioner";
 import Laporan from "../pages/admin/Laporan";
 import About from "../pages/admin/About";
 
+// 🔹 Import halaman Feedback
+import AdminFeedbackPage from "../pages/admin/AdminFeedbackPage";
+
 function AdminRoutes() {
   return (
     <Routes>
@@ -20,6 +23,10 @@ function AdminRoutes() {
         <Route path="periode" element={<Periode />} />
         <Route path="kuisioner" element={<Kuisioner />} />
         <Route path="laporan" element={<Laporan />} />
+
+        {/* 🔹 Route baru untuk Feedback */}
+        <Route path="feedback" element={<AdminFeedbackPage />} />
+
         <Route path="about" element={<About />} />
       </Route>
     </Routes>

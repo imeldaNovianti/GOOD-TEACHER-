@@ -1,42 +1,58 @@
-package com.example.backend.model;
+package com.example.backend.model; // Menentukan package untuk entitas ini
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference; // Mengimpor anotasi untuk pengelolaan relasi JSON
+import jakarta.persistence.*; // Mengimpor anotasi JPA untuk pemetaan entitas ke dalam database
+import lombok.*; // Mengimpor anotasi Lombok
+import java.util.ArrayList; // Mengimpor ArrayList untuk daftar achievements
+import java.util.List; // Mengimpor List untuk daftar achievements
 
-@Entity
-@Table(name = "users")
+@Entity // Menandakan bahwa kelas ini adalah entitas JPA
+@Table(name = "users") // Menentukan nama tabel dalam database untuk entitas ini, yaitu "users"
 public class User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id // Menandakan bahwa field ini adalah primary key untuk entitas
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Strategi auto-increment untuk ID
+    private Long id; // ID unik untuk entri User
 
-    @Column(nullable = false, unique = true)
-    private String username; // auto dari NISN atau fallback
+    @Column(nullable = false, unique = true) // Kolom username harus unik dan tidak null
+    private String username; // Nama pengguna (dapat berasal dari NISN atau fallback)
 
-    @Column(nullable = false)
-    private String password;
+    @Column(nullable = false) // Kolom password tidak boleh null
+    private String password; // Password pengguna
 
-    @Column(nullable = false, name = "nama_lengkap")
-    private String namaLengkap;
+    @Column(nullable = false, name = "nama_lengkap") // Kolom nama lengkap tidak boleh null
+    private String namaLengkap; // Nama lengkap pengguna
 
-    @Column(nullable = false, unique = true)
-    private String nisn;
+    @Column(nullable = false, unique = true) // Kolom NISN harus unik dan tidak null
+    private String nisn; // NISN siswa
 
-    @Column(nullable = false)
-    private String kelas;
+    @Column(nullable = false) // Kolom kelas tidak boleh null
+    private String kelas; // Kelas pengguna
 
-    @Column(nullable = false)
-    private String role = "SISWA"; // default SISWA
+    @Column(nullable = false) // Kolom role tidak boleh null
+    private String role = "SISWA"; // Default role adalah "SISWA"
 
-    private String email;
-    private String noHp;
-    private String alamat;
-    private String tglLahir;
-    private String namaAyah;
-    private String namaIbu;
+    private String email; // Email pengguna (opsional)
 
+    private String noHp; // Nomor telepon pengguna (opsional)
+
+    private String alamat; // Alamat pengguna (opsional)
+
+    private String tglLahir; // Tanggal lahir pengguna (opsional)
+
+    private String namaAyah; // Nama ayah (opsional)
+
+    private String namaIbu; // Nama ibu (opsional)
+
+    // Relasi ke Achievement
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true) // Relasi satu ke banyak dengan entitas Achievement
+    @JsonManagedReference // Untuk mengelola relasi JSON agar tidak terjadi rekursi
+    private List<Achievement> achievements = new ArrayList<>(); // Daftar achievements pengguna
+
+    // Constructor tanpa parameter
     public User() {}
 
+    // Constructor dengan beberapa parameter utama
     public User(String username, String password, String namaLengkap, String nisn, String kelas) {
         this.username = username;
         this.password = password;
@@ -46,9 +62,9 @@ public class User {
         this.role = "SISWA";
     }
 
+    // Metode yang dipanggil sebelum entitas disimpan ke database
     @PrePersist
     public void prePersist() {
-        // kalau username kosong → auto isi dengan nisn
         if (username == null || username.isBlank()) {
             username = (nisn != null && !nisn.isBlank())
                     ? nisn
@@ -98,4 +114,7 @@ public class User {
 
     public String getNamaIbu() { return namaIbu; }
     public void setNamaIbu(String namaIbu) { this.namaIbu = namaIbu; }
+
+    public List<Achievement> getAchievements() { return achievements; }
+    public void setAchievements(List<Achievement> achievements) { this.achievements = achievements; }
 }

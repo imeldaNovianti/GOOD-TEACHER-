@@ -1,124 +1,135 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react"; // React hooks
 import {
   getGuru,
   createGuru,
   updateGuru,
   deleteGuru,
-} from "../../api/adminApi";
-import Table from "../../components/common/Table";
-import Button from "../../components/common/Button";
+} from "../../api/adminApi"; // API CRUD guru
+import Table from "../../components/common/Table"; // Komponen tabel reusable
+import Button from "../../components/common/Button"; // Komponen tombol reusable
 import {
   FaEdit,
   FaTrash,
   FaSearch,
   FaSortAmountDown,
   FaSortAmountUp,
-} from "react-icons/fa";
+} from "react-icons/fa"; // Icon font awesome
 
+// Opsi sort
 const SORT_FIELDS = [
   { label: "Nama Guru", value: "namaGuru" },
   { label: "Mata Pelajaran", value: "mataPelajaran" },
 ];
 
 function DataGuru() {
-  const [rows, setRows] = useState([]);
-  const [totalElements, setTotalElements] = useState(0);
+  // State data dan total untuk tabel
+  const [rows, setRows] = useState([]); // Data guru
+  const [totalElements, setTotalElements] = useState(0); // Total data untuk pagination
 
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("namaGuru");
-  const [sortDir, setSortDir] = useState("asc");
+  // State pagination, search, sort
+  const [page, setPage] = useState(0); // Halaman saat ini
+  const [size, setSize] = useState(10); // Baris per halaman
+  const [search, setSearch] = useState(""); // Keyword pencarian
+  const [sortBy, setSortBy] = useState("namaGuru"); // Kolom sort default
+  const [sortDir, setSortDir] = useState("asc"); // Arah sort default
 
-  // form state
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ namaGuru: "", mataPelajaran: "" });
-  const [errors, setErrors] = useState({});
-  const debounceRef = useRef(null);
+  // State form tambah/edit
+  const [editId, setEditId] = useState(null); // ID guru yang sedang diedit
+  const [form, setForm] = useState({ namaGuru: "", mataPelajaran: "" }); // Data input form
+  const [errors, setErrors] = useState({}); // Validasi form
+  const debounceRef = useRef(null); // Ref untuk debounce search
 
+  // Hitung total halaman
   const totalPages = useMemo(
     () => Math.ceil(totalElements / size) || 1,
     [totalElements, size]
   );
 
+  // Validasi form
   const validate = () => {
     const e = {};
-    if (!form.namaGuru?.trim()) e.namaGuru = "Nama guru wajib diisi";
+    if (!form.namaGuru?.trim()) e.namaGuru = "Nama guru wajib diisi"; // Nama wajib
     if (!form.mataPelajaran?.trim())
-      e.mataPelajaran = "Mata pelajaran wajib diisi";
+      e.mataPelajaran = "Mata pelajaran wajib diisi"; // Mapel wajib
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return Object.keys(e).length === 0; // True jika valid
   };
 
+  // Reset form
   const resetForm = () => {
-    setForm({ namaGuru: "", mataPelajaran: "" });
-    setErrors({});
-    setEditId(null);
+    setForm({ namaGuru: "", mataPelajaran: "" }); // Reset input
+    setErrors({}); // Reset error
+    setEditId(null); // Reset editId
   };
 
+  // Fetch data guru dari API
   const fetchData = async () => {
     const res = await getGuru({ search, sortBy, sortDir, page, size });
-    setRows(res.data.content || res.data || []);
+    setRows(res.data.content || res.data || []); // Set data
     setTotalElements(
       typeof res.data.totalElements === "number"
         ? res.data.totalElements
         : res.data.content
         ? res.data.content.length
         : 0
-    );
+    ); // Set totalElements untuk pagination
   };
 
+  // Effect: fetch data saat page/size/sort berubah
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, size, sortBy, sortDir]);
 
+  // Effect: debounce search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setPage(0);
-      fetchData();
-    }, 400);
+      setPage(0); // Reset ke halaman 0 saat search
+      fetchData(); // Fetch data
+    }, 400); // Delay 400ms
     return () => clearTimeout(debounceRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  // Edit guru
   const onEdit = (row) => {
-    setForm({ namaGuru: row.namaGuru, mataPelajaran: row.mataPelajaran });
-    setEditId(row.id);
+    setForm({ namaGuru: row.namaGuru, mataPelajaran: row.mataPelajaran }); // Isi form
+    setEditId(row.id); // Set editId
   };
 
+  // Hapus guru
   const onDelete = async (id) => {
     if (confirm("Yakin hapus data ini?")) {
-      await deleteGuru(id);
+      await deleteGuru(id); // API delete
       if (rows.length === 1 && page > 0) {
-        setPage((p) => p - 1);
+        setPage((p) => p - 1); // Jika cuma 1 data di halaman, pindah halaman sebelumnya
       } else {
-        fetchData();
+        fetchData(); // Fetch ulang
       }
     }
   };
 
+  // Submit form
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) return; // Validasi
     if (editId) {
-      await updateGuru(editId, form);
+      await updateGuru(editId, form); // Update jika edit
     } else {
-      await createGuru(form);
+      await createGuru(form); // Tambah jika baru
     }
-    resetForm();
-    fetchData();
+    resetForm(); // Reset form
+    fetchData(); // Fetch ulang data
   };
 
+  // Toggle sort direction saat klik header
   const toggleSortByHeader = (field) => {
     if (sortBy === field) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      setSortDir((d) => (d === "asc" ? "desc" : "asc")); // Toggle asc/desc
     } else {
       setSortBy(field);
-      setSortDir("asc");
+      setSortDir("asc"); // Default asc
     }
-    setPage(0);
+    setPage(0); // Reset page
   };
 
   return (
@@ -191,7 +202,7 @@ function DataGuru() {
         </div>
       </form>
 
-      {/* Search & filter */}
+      {/* Search & Filter */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <div className="flex items-center bg-white rounded-full px-3 py-1 shadow border border-gray-200">
@@ -328,7 +339,7 @@ function DataGuru() {
             disabled={page >= totalPages - 1}
             className="!bg-gray-200 !text-gray-700 hover:!bg-gray-300 disabled:opacity-50"
           >
-            Last »
+            Last »  
           </Button>
         </div>
       </div>

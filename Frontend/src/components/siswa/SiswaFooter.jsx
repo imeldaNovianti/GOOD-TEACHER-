@@ -1,43 +1,40 @@
 import {
-  FaFacebook,
-  FaInstagram,
-  FaTwitter,
-  FaLinkedin,
-  FaEnvelope,
-  FaPhone,
-  FaMapMarkerAlt,
-} from "react-icons/fa";
-import Logo from "../../assets/2-removebg-preview.png";
+  FaFacebook, FaInstagram, FaTwitter, FaLinkedin,
+  FaEnvelope, FaPhone, FaMapMarkerAlt
+} from "react-icons/fa"; 
+// Import ikon sosial & kontak
+import Logo from "../../assets/2-removebg-preview.png"; 
+// Import logo aplikasi
 
 function SiswaFooter() {
   return (
     <footer className="relative text-white overflow-hidden">
-      {/* Background Gradient */}
+      {/* Footer utama dengan posisi relatif */}
+
+      {/* 🔹 Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-black via-red-950 to-yellow-900"></div>
 
-      {/* Particle Starfield */}
+      {/* 🔹 Particle Starfield */}
       <div className="absolute inset-0 overflow-hidden">
         {Array.from({ length: 25 }).map((_, i) => (
           <div
             key={i}
             className="absolute w-1 h-1 bg-yellow-200 rounded-full animate-twinkle"
             style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              animationDuration: `${2 + Math.random() * 3}s`,
+              top: `${Math.random() * 100}%`, 
+              left: `${Math.random() * 100}%`, 
+              animationDuration: `${2 + Math.random() * 3}s`, 
               animationDelay: `${Math.random() * 5}s`,
             }}
           ></div>
         ))}
       </div>
 
-      {/* Wave Animated Top */}
+      {/* 🔹 Wave Animated Top */}
       <div className="absolute -top-1 left-0 w-full overflow-hidden leading-[0] rotate-180">
         <svg
           className="relative block w-full h-24 animate-wave-slow"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 1200 120"
-          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"
         >
           <path
             d="M321.39 56.44C187.53 76.55 85.87 98.51 0 
@@ -49,7 +46,7 @@ function SiswaFooter() {
         </svg>
       </div>
 
-      {/* Main Content Glass */}
+      {/* 🔹 Main Content Glass */}
       <div className="relative max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 px-6 md:px-16 py-16 bg-white/10 backdrop-blur-xl border-t border-white/20 rounded-t-3xl shadow-2xl z-10">
         
         {/* Brand Section */}
@@ -74,10 +71,7 @@ function SiswaFooter() {
               { name: "About", path: "/siswa/about" },
             ].map((link, i) => (
               <li key={i}>
-                <a
-                  href={link.path}
-                  className="flex items-center gap-2 relative group"
-                >
+                <a href={link.path} className="flex items-center gap-2 relative group">
                   <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-transparent opacity-0 group-hover:opacity-40 transition duration-500 blur-lg"></span>
                   <span className="relative z-10 transition-all duration-300 group-hover:text-yellow-200 group-hover:translate-x-1 group-hover:scale-110">
                     ➜ {link.name}
@@ -115,10 +109,7 @@ function SiswaFooter() {
               { name: "LinkedIn", icon: <FaLinkedin className="text-2xl" /> },
             ].map((soc, i) => (
               <li key={i}>
-                <a
-                  href="#"
-                  className="flex items-center gap-3 relative group"
-                >
+                <a href="#" className="flex items-center gap-3 relative group">
                   <span className="absolute inset-0 bg-gradient-to-r from-red-500 to-yellow-400 opacity-0 group-hover:opacity-30 transition duration-500 blur-lg"></span>
                   <span className="relative z-10 flex items-center gap-3 transition-all duration-300 group-hover:text-yellow-200 group-hover:scale-110 group-hover:translate-x-1">
                     {soc.icon} {soc.name}
@@ -141,19 +132,17 @@ function SiswaFooter() {
           0%, 100% { opacity: 0.2; transform: scale(0.8); }
           50% { opacity: 1; transform: scale(1.2); }
         }
-        .animate-twinkle {
-          animation: twinkle infinite;
-        }
+        .animate-twinkle { animation: twinkle infinite; }
+
         @keyframes wave {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
-        .animate-wave-slow {
-          animation: wave 8s linear infinite;
-        }
+        .animate-wave-slow { animation: wave 8s linear infinite; }
       `}</style>
     </footer>
   );
 }
 
-export default SiswaFooter;
+export default SiswaFooter; 
+// Export agar bisa digunakan di layout siswa

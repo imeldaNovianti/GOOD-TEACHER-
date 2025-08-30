@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { Bar } from "react-chartjs-2";
+import { useEffect, useState, useRef } from "react"; // Mengimpor hook dari React
+import { Bar } from "react-chartjs-2"; // Mengimpor komponen Bar untuk membuat chart
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,56 +8,58 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import axios from "axios";
+} from "chart.js"; // Mengimpor library chart.js dan plugin yang dibutuhkan untuk chart
+import jsPDF from "jspdf"; // Mengimpor jsPDF untuk membuat dan mengunduh PDF
+import html2canvas from "html2canvas"; // Mengimpor html2canvas untuk mengubah elemen HTML menjadi gambar
+import axios from "axios"; // Mengimpor axios untuk melakukan HTTP request
 
+// Registrasi plugin yang diperlukan untuk ChartJS
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function Laporan() {
-  const [dataGuru, setDataGuru] = useState([]);
-  const laporanRef = useRef();
+  const [dataGuru, setDataGuru] = useState([]); // State untuk menyimpan data guru
+  const laporanRef = useRef(); // Referensi untuk elemen yang akan dipindai untuk PDF
 
-  // Ambil data dari backend
+  // Ambil data dari backend dengan axios saat komponen pertama kali dimuat
   useEffect(() => {
     axios
-      .get("http://localhost:8080/api/kuisioner-jawaban/statistik/guru")
-      .then((res) => setDataGuru(res.data))
-      .catch((err) => console.error("❌ Error fetch laporan:", err));
-  }, []);
+      .get("http://localhost:8080/api/kuisioner-jawaban/statistik/guru") // Mengambil data statistik guru
+      .then((res) => setDataGuru(res.data)) // Menyimpan data yang diterima dari backend ke dalam state
+      .catch((err) => console.error("❌ Error fetch laporan:", err)); // Menangani error jika terjadi
+  }, []); // Empty array memastikan hanya dijalankan sekali saat mount
 
-  // Data chart
+  // Menyiapkan data untuk chart
   const chartData = {
-    labels: dataGuru.map((g) => g.guru ?? "Unknown"),
+    labels: dataGuru.map((g) => g.guru ?? "Unknown"), // Nama guru sebagai label
     datasets: [
       {
-        label: "Rata-rata Skor",
-        data: dataGuru.map((g) => g.rataRata ?? 0),
-        backgroundColor: "#991b1b", // ganti ke hex untuk html2canvas
+        label: "Rata-rata Skor", // Label untuk dataset
+        data: dataGuru.map((g) => g.rataRata ?? 0), // Data untuk rata-rata skor setiap guru
+        backgroundColor: "#991b1b", // Warna latar belakang untuk grafik
       },
     ],
   };
 
+  // Opsi konfigurasi untuk chart
   const chartOptions = {
-    responsive: true,
+    responsive: true, // Membuat chart responsif terhadap ukuran layar
     plugins: {
-      legend: { position: "top" },
-      title: { display: true, text: "Rata-rata Skor Per Guru" },
+      legend: { position: "top" }, // Posisi legenda di atas chart
+      title: { display: true, text: "Rata-rata Skor Per Guru" }, // Judul chart
     },
   };
 
-  // Fungsi export PDF
+  // Fungsi untuk mengekspor halaman sebagai PDF
   const downloadPDF = () => {
-    const input = laporanRef.current;
+    const input = laporanRef.current; // Mengambil referensi elemen yang akan dipindai
     html2canvas(input, { scale: 2, useCORS: true, willReadFrequently: true }).then(
       (canvas) => {
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-        pdf.save("laporan-guru.pdf");
+        const imgData = canvas.toDataURL("image/png"); // Mengonversi canvas menjadi data URL
+        const pdf = new jsPDF("p", "mm", "a4"); // Membuat file PDF baru
+        const pdfWidth = pdf.internal.pageSize.getWidth(); // Mengambil lebar halaman PDF
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width; // Menghitung tinggi PDF agar sesuai dengan rasio gambar
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight); // Menambahkan gambar ke PDF
+        pdf.save("laporan-guru.pdf"); // Menyimpan file PDF dengan nama "laporan-guru.pdf"
       }
     );
   };
@@ -71,15 +73,16 @@ function Laporan() {
         Admin bisa melihat rekap skor guru dan download laporan dalam bentuk PDF.
       </p>
 
+      {/* Div yang berisi elemen yang akan dipindai menjadi gambar untuk PDF */}
       <div
         ref={laporanRef}
         style={{ backgroundColor: "#ffffff" }}
         className="p-6 shadow rounded space-y-6"
       >
-        {/* Grafik */}
+        {/* Grafik Bar */}
         <Bar data={chartData} options={chartOptions} />
 
-        {/* Tabel */}
+        {/* Tabel dengan data guru */}
         <div className="overflow-x-auto">
           <table className="w-full border mt-6">
             <thead style={{ backgroundColor: "#991b1b", color: "#ffffff" }}>
@@ -90,6 +93,7 @@ function Laporan() {
               </tr>
             </thead>
             <tbody>
+              {/* Menampilkan data guru */}
               {dataGuru.length > 0 ? (
                 dataGuru.map((g, index) => (
                   <tr
@@ -113,6 +117,7 @@ function Laporan() {
         </div>
       </div>
 
+      {/* Tombol untuk mengunduh laporan dalam format PDF */}
       <button
         onClick={downloadPDF}
         className="px-5 py-2 bg-[#991b1b] text-white rounded hover:bg-[#7a1414] transition"
